@@ -1,0 +1,18 @@
+{
+  "short_name": "CRM Ibiza",
+  "name": "Ibiza Luxury Dreams CRM",
+  "description": "Plataforma inteligente de gestión inmobiliaria para Venta y Alquiler",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1A3A5C",
+  "background_color": "#0F172A",
+  "orientation": "portrait"
+}

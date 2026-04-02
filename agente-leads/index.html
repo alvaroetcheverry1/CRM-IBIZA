@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Ibiza Luxury Dreams — Encuentra tu propiedad de ensueño en Ibiza. Villas exclusivas, fincas y apartamentos de lujo." />
+  <title>Ibiza Luxury Dreams — Propiedades de Lujo en Ibiza</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:    #0D1B2A;
+      --med:     #1A3A5C;
+      --sky:     #4A6FA5;
+      --gold:    #C9A84C;
+      --gold-l:  #E8C96A;
+      --pearl:   #F5F0E8;
+      --white:   #FFFFFF;
+      --slate:   #8A9BB0;
+    }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--white); overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; }
+
+    /* ─── HERO ─────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0D1B2A 0%, #1A3A5C 55%, #0D1B2A 100%);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      right: -10%;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -15%;
+      left: -5%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(74,111,165,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ─── NAV ──────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 3rem;
+      background: rgba(13,27,42,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      transition: all 0.3s;
+    }
+    .nav-brand { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+    .nav-brand span { color: var(--gold); }
+    .nav-sub { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--slate); margin-top: 1px; }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a { font-size: 0.85rem; color: rgba(255,255,255,0.75); transition: color 0.2s; font-weight: 500; }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.82rem;
+      padding: 0.6rem 1.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,168,76,0.4); }
+
+    /* ─── HERO CONTENT ─────────────────────────── */
+    .hero-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 8rem 3rem 4rem;
+      gap: 4rem;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-left { flex: 1; }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(201,168,76,0.12);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+    .hero-tag::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title em { font-style: italic; color: var(--gold); }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+      max-width: 500px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-num { font-size: 1.75rem; font-weight: 800; color: var(--gold); line-height: 1; }
+    .stat-lab { font-size: 0.72rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+    .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-primary-hero {
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.875rem 2rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary-hero:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.4); }
+    .btn-secondary-hero {
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: white;
+      font-weight: 500;
+      font-size: 0.9rem;
+      padding: 0.875rem 2rem;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary-hero:hover { background: rgba(255,255,255,0.07); border-color: var(--gold); color: var(--gold); }
+
+    /* ─── CAPTURE FORM CARD ────────────────────── */
+    .hero-right { width: 420px; flex-shrink: 0; }
+    .capture-card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+    }
+    .capture-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      margin-bottom: 0.4rem;
+    }
+    .capture-card p {
+      font-size: 0.82rem;
+      color: var(--slate);
+      margin-bottom: 1.75rem;
+      line-height: 1.6;
+    }
+    .form-field {
+      margin-bottom: 1rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--slate);
+      margin-bottom: 6px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input::placeholder { color: rgba(255,255,255,0.3); }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.06);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+    .form-select { cursor: pointer; }
+    .form-select option { background: var(--navy); color: white; }
+    .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.95rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,168,76,0.5); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit.loading { opacity: 0.8; pointer-events: none; }
+    .form-disclaimer {
+      font-size: 0.68rem;
+      color: var(--slate);
+      text-align: center;
+      margin-top: 0.75rem;
+      line-height: 1.6;
+    }
+
+    /* ─── SUCCESS STATE ────────────────────────── */
+    .success-state {
+      text-align: center;
+      padding: 1rem 0;
+      display: none;
+    }
+    .success-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      font-size: 1.5rem;
+    }
+    .success-state h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .success-state p { font-size: 0.85rem; color: var(--slate); line-height: 1.7; }
+
+    /* ─── FEATURES ─────────────────────────────── */
+    .section { padding: 6rem 3rem; max-width: 1280px; margin: 0 auto; }
+    .section-tag {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      color: rgba(255,255,255,0.65);
+      font-size: 1rem;
+      line-height: 1.8;
+      max-width: 560px;
+      margin-bottom: 3rem;
+    }
+
+    /* ─── PROPERTY CARDS ───────────────────────── */
+    .props-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .prop-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .prop-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(201,168,76,0.3);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    }
+    .prop-img {
+      height: 200px;
+      background: linear-gradient(135deg, #1A3A5C 0%, #4A6FA5 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+    }
+    .prop-badge {
+      position: absolute;
+      top: 12px; left: 12px;
+      background: rgba(201,168,76,0.9);
+      color: var(--navy);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .prop-body { padding: 1.25rem; }
+    .prop-ref { font-size: 0.65rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .prop-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .prop-zona { font-size: 0.78rem; color: var(--slate); margin-bottom: 0.875rem; }
+    .prop-specs { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.78rem; color: rgba(255,255,255,0.65); }
+    .prop-price { font-size: 1.375rem; font-weight: 800; color: var(--gold); }
+    .prop-price-label { font-size: 0.68rem; color: var(--slate); font-weight: 400; margin-left: 4px; }
+
+    /* ─── SERVICES ─────────────────────────────── */
+    .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .service-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+    .service-card:hover { border-color: rgba(201,168,76,0.25); transform: translateY(-2px); }
+    .service-icon { font-size: 2.25rem; margin-bottom: 1rem; }
+    .service-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; }
+    .service-desc { font-size: 0.85rem; color: rgba(255,255,255,0.6); line-height: 1.7; }
+
+    /* ─── CONTACT SECTION ──────────────────────── */
+    .contact-section {
+      background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(26,58,92,0.4));
+      border-top: 1px solid rgba(201,168,76,0.15);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      padding: 5rem 3rem;
+      text-align: center;
+    }
+    .contact-inner { max-width: 700px; margin: 0 auto; }
+
+    /* ─── FOOTER ───────────────────────────────── */
+    footer {
+      padding: 2.5rem 3rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--slate);
+    }
+    .footer-brand { font-family: 'Playfair Display', serif; color: white; }
+    .footer-brand span { color: var(--gold); }
+
+    /* ─── CHAT WIDGET ──────────────────────────── */
+    .chat-bubble {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(201,168,76,0.5);
+      z-index: 200;
+      transition: all 0.2s;
+    }
+    .chat-bubble:hover { transform: scale(1.1); }
+    .chat-bubble .badge { position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #E53E3E; border-radius: 50%; font-size: 0.65rem; color: white; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--navy); }
+
+    .chat-panel {
+      position: fixed;
+      bottom: 6rem;
+      right: 2rem;
+      width: 360px;
+      background: #0F1E30;
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 20px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUpChat 0.25s ease;
+    }
+    .chat-panel.open { display: flex; }
+
+    @keyframes slideUpChat {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, var(--navy), var(--med));
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+    }
+    .chat-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .chat-agent-name { font-weight: 700; font-size: 0.875rem; }
+    .chat-agent-status { font-size: 0.7rem; color: #68D391; display: flex; align-items: center; gap: 5px; }
+    .chat-agent-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #68D391; }
+    .chat-close { margin-left: auto; cursor: pointer; font-size: 1.1rem; color: var(--slate); line-height: 1; }
+
+    .chat-messages {
+      flex: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      max-height: 340px;
+      min-height: 240px;
+    }
+    .msg { display: flex; gap: 8px; }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-bubble {
+      padding: 0.65rem 0.9rem;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      max-width: 80%;
+    }
+    .msg.bot .msg-bubble { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); border-radius: 4px 14px 14px 14px; }
+    .msg.user .msg-bubble { background: linear-gradient(135deg, var(--gold), var(--gold-l)); color: var(--navy); font-weight: 500; border-radius: 14px 4px 14px 14px; }
+    .msg-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-l)); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; margin-top: auto; }
+
+    .chat-quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 1rem 0.75rem;
+    }
+    .quick-reply {
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.25);
+      color: var(--gold);
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-reply:hover { background: rgba(201,168,76,0.2); }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      padding: 0.875rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .chat-input {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 0.6rem 0.875rem;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input::placeholder { color: rgba(255,255,255,0.3); }
+    .chat-input:focus { border-color: var(--gold); }
+    .chat-send {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .chat-send:hover { transform: scale(1.05); }
+
+    .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+    .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--slate); animation: bounce 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+
+    /* ─── TOAST ────────────────────────────────── */
+    .toast {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: #1A3A5C;
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-size: 0.875rem;
+      z-index: 300;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      display: none;
+      gap: 10px;
+      align-items: center;
+      max-width: 320px;
+      animation: slideDown 0.3s ease;
+    }
+    .toast.show { display: flex; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── RESPONSIVE ───────────────────────────── */
+    @media (max-width: 1024px) {
+      .prop-grid, .services-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-right { width: 360px; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      .hero-content { flex-direction: column; padding: 6rem 1.5rem 3rem; gap: 2.5rem; }
+      .hero-right { width: 100%; }
+      .section { padding: 4rem 1.5rem; }
+      .props-grid, .services-grid { grid-template-columns: 1fr; }
+      .chat-panel { width: calc(100vw - 2rem); right: 1rem; }
+      footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ──────────────────────────────────────── -->
+<nav id="navbar">
+  <div>
+    <div class="nav-brand">Ibiza Luxury <span>Dreams</span></div>
+    <div class="nav-sub">Real Estate · Ibiza</div>
+  </div>
+  <div class="nav-links">
+    <a href="#propiedades">Propiedades</a>
+    <a href="#servicios">Servicios</a>
+    <a href="#contacto">Contacto</a>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('formulario-lead').scrollIntoView({behavior:'smooth'})">
+    Hablar con un agente
+  </button>
+</nav>
+
+<!-- ─── HERO ──────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="hero-tag">Ibiza · La isla de los sueños</div>
+      <h1 class="hero-title">
+        Tu propiedad de<br/>
+        <em>lujo en Ibiza</em><br/>
+        te espera
+      </h1>
+      <p class="hero-desc">
+        Especialistas en propiedades exclusivas de alquiler vacacional, larga duración
+        y venta en Ibiza y Formentera. Servicio personalizado de alto standing.
+      </p>
+      <div class="hero-stats">
+        <div>
+          <div class="stat-num">120+</div>
+          <div class="stat-lab">Propiedades</div>
+        </div>
+        <div>
+          <div class="stat-num">15</div>
+          <div class="stat-lab">Años en Ibiza</div>
+        </div>
+        <div>
+          <div class="stat-num">98%</div>
+          <div class="stat-lab">Satisfacción</div>
+        </div>
+      </div>
+      <div class="hero-btns">
+        <button class="btn-primary-hero" onclick="document.getElementById('propiedades').scrollIntoView({behavior:'smooth'})">
+          🏡 Ver propiedades
+        </button>
+        <button class="btn-secondary-hero" onclick="openChat()">
+          💬 Chatear con un agente
+        </button>
+      </div>
+    </div>
+
+    <!-- FORMULARIO DE CAPTACIÓN -->
+    <div class="hero-right" id="formulario-lead">
+      <div class="capture-card">
+        <!-- Formulario -->
+        <div id="form-container">
+          <h3>Encuentra tu propiedad ideal</h3>
+          <p>Déjanos tus datos y te contactamos en menos de 2 horas con opciones personalizadas.</p>
+
+          <form id="lead-form" novalidate>
+            <div class="form-grid2">
+              <div class="form-field">
+                <label class="form-label">Nombre *</label>
+                <input class="form-input" type="text" id="nombre" placeholder="Tu nombre" required />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Apellidos *</label>
+                <input class="form-input" type="text" id="apellidos" placeholder="Apellidos" />
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Email *</label>
+              <input class="form-input" type="email" id="email" placeholder="tu@email.com" required />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Teléfono</label>
+              <input class="form-input" type="tel" id="telefono" placeholder="+34 600 000 000" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Tipo de interés *</label>
+              <select class="form-select" id="tipo">
+                <option value="">¿Qué buscas?</option>
+                <option value="VACACIONAL">🌴 Alquiler vacacional</option>
+                <option value="LARGA_DURACION">🏡 Alquiler larga duración</option>
+                <option value="COMPRA">🏛 Compra de propiedad</option>
+                <option value="AMBOS">🔄 Alquiler o compra</option>
+              </select>
+            </div>
+            <div class="form-grid2">
+              <div class="form-field">
+                <label class="form-label">Zona preferida</label>
+                <select class="form-select" id="zona">
+                  <option value="">Cualquier zona</option>
+                  <option>Jesús</option>
+                  <option>Talamanca</option>
+                  <option>Santa Eulalia</option>
+                  <option>Santa Gertrudis</option>
+                  <option>San José</option>
+                  <option>Eivissa Centro</option>
+                  <option>Ibiza ciudad</option>
+                  <option>Formentera</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Presupuesto</label>
+                <select class="form-select" id="presupuesto">
+                  <option value="">Sin definir</option>
+                  <option value="500000">Hasta 500K€</option>
+                  <option value="1000000">500K – 1M€</option>
+                  <option value="3000000">1M – 3M€</option>
+                  <option value="5000000">3M – 5M€</option>
+                  <option value="10000000">+ 5M€</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn-submit" id="submit-btn">
+              <span id="btn-text">✨ Quiero mi villa ideal</span>
+            </button>
+            <p class="form-disclaimer">
+              🔒 Tus datos están protegidos · GDPR · Sin spam.<br/>
+              Te respondemos en menos de 2 horas laborables.
+            </p>
+          </form>
+        </div>
+
+        <!-- Estado de éxito -->
+        <div class="success-state" id="success-state">
+          <div class="success-icon">✓</div>
+          <h3>¡Perfecto, <span id="success-nombre"></span>!</h3>
+          <p>
+            Hemos recibido tu solicitud y la hemos registrado en nuestro sistema.<br/><br/>
+            Un agente de <strong>Ibiza Luxury Dreams</strong> te contactará en menos de 2 horas.
+          </p>
+          <button class="btn-submit" style="margin-top: 1.5rem;" onclick="resetForm()">
+            Enviar otra consulta
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PROPIEDADES DESTACADAS ─────────────────── -->
+<section id="propiedades" style="background: rgba(255,255,255,0.02); padding: 5rem 0; border-top: 1px solid rgba(255,255,255,0.05);">
+  <div class="section">
+    <div class="section-tag">Portfolio exclusivo</div>
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:2.5rem;">
+      <div>
+        <h2 class="section-title">Propiedades destacadas</h2>
+        <p style="color:rgba(255,255,255,0.6); font-size:0.95rem; line-height:1.7; max-width:500px; margin:0;">Selección curada de las mejores propiedades en Ibiza disponibles ahora mismo.</p>
+      </div>
+      <button class="btn-secondary-hero" onclick="document.getElementById('formulario-lead').scrollIntoView({behavior:'smooth'})">
+        Ver todo el portfolio →
+      </button>
+    </div>
+    <div class="props-grid" id="props-grid">
+      <!-- Cargado vía JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ─── SERVICIOS ──────────────────────────────── -->
+<section id="servicios" style="padding: 5rem 0;">
+  <div class="section">
+    <div class="section-tag">Lo que ofrecemos</div>
+    <h2 class="section-title">Servicios premium</h2>
+    <p class="section-desc">Gestión integral de principio a fin. Nos encargamos de todo para que tú solo disfrutes.</p>
+
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-icon">🌴</div>
+        <div class="service-title">Alquiler Vacacional</div>
+        <div class="service-desc">Gestionamos tu villa durante la temporada alta maximizando la ocupación y los ingresos. Licencias ETV, marketing y atención al huésped 24/7.</div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🏡</div>
+        <div class="service-title">Alquiler Larga Duración</div>
+        <div class="service-desc">Selección rigurosa de inquilinos, contratos LAU, gestión de pagos y mantenimiento. Tu propiedad siempre protegida y rentable.</div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🏛</div>
+        <div class="service-title">Compra y Venta</div>
+        <div class="service-desc">Asesoramiento experto en el mercado de lujo ibicenco. Valoraciones, due diligence, negociación y acompañamiento hasta escritura.</div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">⚖️</div>
+        <div class="service-title">Asesoría Legal</div>
+        <div class="service-desc">Red de abogados especializados en derecho inmobiliario balear. Licencias de obras, legalización de ETV y contratos personalizados.</div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🤖</div>
+        <div class="service-title">IA Documental</div>
+        <div class="service-desc">Procesamiento automático de documentos con inteligencia artificial. Extracción de datos, clasificación y organización en la nube.</div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📊</div>
+        <div class="service-title">Portfolio Management</div>
+        <div class="service-desc">Gestión activa de tu cartera de propiedades. Reportes mensuales, optimización de yield y estrategia de inversión personalizada.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CONTACT CTA ─────────────────────────────── -->
+<section id="contacto" class="contact-section">
+  <div class="contact-inner">
+    <div class="section-tag" style="margin-bottom:0.75rem;">Contacta con nosotros</div>
+    <h2 style="font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; margin-bottom:1rem;">
+      ¿Listo para encontrar tu<br/><em style="color:var(--gold)">propiedad en Ibiza</em>?
+    </h2>
+    <p style="color:rgba(255,255,255,0.65); line-height:1.8; margin-bottom:2rem; font-size:0.95rem;">
+      Nuestro equipo de asesores especializados en Ibiza está disponible para orientarte en cualquier decisión inmobiliaria.
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+      <button class="btn-primary-hero" onclick="openChat()">
+        💬 Chat con agente
+      </button>
+      <button class="btn-secondary-hero" onclick="document.getElementById('formulario-lead').scrollIntoView({behavior:'smooth'})">
+        📋 Formulario de contacto
+      </button>
+    </div>
+    <div style="display:flex; gap:2.5rem; justify-content:center; margin-top:2.5rem; flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--slate); margin-bottom:4px;">Teléfono</div>
+        <div style="font-weight:600;">+34 971 30 00 00</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--slate); margin-bottom:4px;">Email</div>
+        <div style="font-weight:600; color:var(--gold);">info@ibizaluxurydreams.com</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--slate); margin-bottom:4px;">Oficina</div>
+        <div style="font-weight:600;">Eivissa · Ibiza, España</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─────────────────────────────────── -->
+<footer>
+  <div>
+    <div class="footer-brand">Ibiza Luxury <span>Dreams</span></div>
+    <div style="font-size:0.68rem; margin-top:2px;">Real Estate · Ibiza · España</div>
+  </div>
+  <div>© 2026 Ibiza Luxury Dreams SL · Todos los derechos reservados · GDPR</div>
+  <div style="color:var(--gold); font-size:0.72rem; font-weight:600;">Licencia API-2026-IB-0023</div>
+</footer>
+
+<!-- ─── CHAT WIDGET ─────────────────────────────── -->
+<div class="chat-bubble" onclick="toggleChat()" id="chat-bubble">
+  💬
+  <div class="badge" id="chat-badge">1</div>
+</div>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div class="chat-avatar">🏡</div>
+    <div>
+      <div class="chat-agent-name">Sofía — Agente IA</div>
+      <div class="chat-agent-status">Disponible ahora</div>
+    </div>
+    <span class="chat-close" onclick="toggleChat()">✕</span>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <!-- mensajes se añaden vía JS -->
+  </div>
+  <div class="chat-quick-replies" id="quick-replies">
+    <button class="quick-reply" onclick="sendQuickReply('Busco villa vacacional')">🌴 Villa vacacional</button>
+    <button class="quick-reply" onclick="sendQuickReply('Busco piso de larga duración')">🏠 Larga duración</button>
+    <button class="quick-reply" onclick="sendQuickReply('Quiero comprar una propiedad')">🏛 Comprar</button>
+    <button class="quick-reply" onclick="sendQuickReply('Quiero info de precios')">💰 Precios</button>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chat-input" placeholder="Escribe tu consulta..." onkeydown="handleChatKey(event)" />
+    <button class="chat-send" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<!-- ─── TOAST ──────────────────────────────────── -->
+<div class="toast" id="toast">
+  <span>✓</span>
+  <span id="toast-msg">Lead guardado en el CRM</span>
+</div>
+
+<script>
+// ─── CRM API ENDPOINT ─────────────────────────────────────
+// Conectado al mini-servidor de leads (localhost:3001)
+const CRM_API = 'http://localhost:3001/api';
+const CRM_SOURCE = 'WEB_LANDING';
+
+// ─── PROPIEDADES DEMO ─────────────────────────────────────
+const DEMO_PROPS = [
+  {
+    ref: 'ALQ-001', nombre: 'Villa Can Rimbau', zona: 'Jesús · Santa Eulalia', tipo: 'VACACIONAL',
+    hab: 6, banos: 5, m2: 520, precio: 8500, priceSuffix: '/ semana', emoji: '🏖',
+    badge: 'Disponible',
+  },
+  {
+    ref: 'ALQ-002', nombre: 'Finca Santa Gertrudis', zona: 'Santa Gertrudis · Interior', tipo: 'VACACIONAL',
+    hab: 4, banos: 3, m2: 310, precio: 4800, priceSuffix: '/ semana', emoji: '🌿',
+    badge: 'Disponible',
+  },
+  {
+    ref: 'VTA-001', nombre: 'Villa Talamanca Premium', zona: 'Talamanca · Frente al mar', tipo: 'VENTA',
+    hab: 5, banos: 5, m2: 580, precio: 5800000, priceSuffix: '', emoji: '🌊',
+    badge: 'En venta',
+  },
+];
+
+function formatNum(n) {
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+}
+
+// Render propiedades destacadas
+function renderProps() {
+  const grid = document.getElementById('props-grid');
+  grid.innerHTML = DEMO_PROPS.map(p => `
+    <div class="prop-card" onclick="document.getElementById('formulario-lead').scrollIntoView({behavior:'smooth'})">
+      <div class="prop-img">
+        <span style="font-size:3.5rem">${p.emoji}</span>
+        <div class="prop-badge">${p.badge}</div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-ref">${p.ref}</div>
+        <div class="prop-name">${p.nombre}</div>
+        <div class="prop-zona">📍 ${p.zona}</div>
+        <div class="prop-specs">
+          <span>🛏 ${p.hab} hab.</span>
+          <span>🚿 ${p.banos} baños</span>
+          <span>📐 ${p.m2}m²</span>
+        </div>
+        <div>
+          <span class="prop-price">${formatNum(p.precio)}</span>
+          <span class="prop-price-label">${p.priceSuffix}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+renderProps();
+
+// ─── FORMULARIO DE CAPTACIÓN ──────────────────────────────
+document.getElementById('lead-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const nombre = document.getElementById('nombre').value.trim();
+  const apellidos = document.getElementById('apellidos').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const telefono = document.getElementById('telefono').value.trim();
+  const tipo = document.getElementById('tipo').value;
+  const zona = document.getElementById('zona').value;
+  const presupuesto = document.getElementById('presupuesto').value;
+
+  if (!nombre || !email) return;
+
+  const btn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  btn.classList.add('loading');
+  btnText.textContent = '⏳ Enviando...';
+
+  // Mapear tipo a CRM
+  const tipoCliente = tipo === 'COMPRA' ? 'COMPRADOR' : tipo === 'VACACIONAL' ? 'INQUILINO' : tipo === 'LARGA_DURACION' ? 'INQUILINO' : 'AMBOS';
+  
+  const leadPayload = {
+    nombre,
+    apellidos,
+    email,
+    telefono: telefono || null,
+    tipo: tipoCliente,
+    estado: 'NUEVO',
+    zonaInteres: zona || null,
+    presupuesto: presupuesto ? parseInt(presupuesto) : null,
+    origen: CRM_SOURCE,
+    notas: `Interés: ${tipo || 'No especificado'} · Zona: ${zona || 'Cualquiera'} · Fuente: Landing page Ibiza Luxury Dreams`,
+  };
+
+  try {
+    // Intentar enviar al CRM real
+    const res = await fetch(`${CRM_API}/clientes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(leadPayload),
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      console.log('✅ Lead guardado en CRM:', data);
+      showToast('✓ Lead guardado en CRM · ID: ' + (data.id || 'nuevo'));
+    } else {
+      throw new Error('CRM no disponible');
+    }
+  } catch (err) {
+    // CRM no conectado — guardar localmente y notificar
+    console.log('📦 CRM en modo mock — lead guardado localmente', leadPayload);
+    showToast('Lead registrado (modo demo) — se sincronizará con el CRM');
+    
+    // Guardar en localStorage como cola de envío
+    const queue = JSON.parse(localStorage.getItem('crm_lead_queue') || '[]');
+    queue.push({ ...leadPayload, timestamp: new Date().toISOString() });
+    localStorage.setItem('crm_lead_queue', JSON.stringify(queue));
+  }
+
+  // Mostrar éxito
+  document.getElementById('form-container').style.display = 'none';
+  document.getElementById('success-state').style.display = 'block';
+  document.getElementById('success-nombre').textContent = nombre;
+});
+
+function resetForm() {
+  document.getElementById('lead-form').reset();
+  document.getElementById('form-container').style.display = 'block';
+  document.getElementById('success-state').style.display = 'none';
+  document.getElementById('submit-btn').classList.remove('loading');
+  document.getElementById('btn-text').textContent = '✨ Quiero mi villa ideal';
+}
+
+// ─── CHAT WIDGET ──────────────────────────────────────────
+let chatOpen = false;
+let chatStep = 0;
+let chatLeadData = {};
+const chatMessages = document.getElementById('chat-messages');
+
+// Respuestas del agente IA
+const BOT_RESPONSES = {
+  greeting: '¡Hola! 🌴 Soy Sofía, tu asesora virtual de **Ibiza Luxury Dreams**. Estoy aquí para ayudarte a encontrar la propiedad perfecta en Ibiza.\n\n¿En qué puedo ayudarte hoy?',
+  vacacional: 'Perfecto 🏖 Tenemos una selección exclusiva de villas vacacionales en Ibiza. Algunas destacadas:\n\n• **Villa Can Rimbau** (Jesús) — desde 8.500€/sem\n• **Finca Santa Gertrudis** (Interior) — desde 4.800€/sem\n\n¿Cuándo planeas venir y cuántos serías?',
+  larga: '🏠 Para larga duración tenemos excelentes opciones en Eivissa, Santa Eulalia y San José. ¿Cuántas habitaciones necesitas?',
+  compra: '🏛 Nuestro portfolio de venta incluye desde apartamentos desde 350.000€ hasta villas de lujo por más de 5M€.\n\n¿Cuál es tu presupuesto aproximado?',
+  precios: '💰 Nuestras tarifas son:\n\n🌴 **Vacacional**: desde 2.100€/semana (baja) hasta 8.500€+ (alta)\n🏠 **Larga duración**: desde 1.400€/mes\n🏛 **Venta**: desde 350K€ hasta 6M€+\n\n¿Quieres que te enviemos el catálogo completo?',
+  capture: '¡Genial! Para enviarte información personalizada, ¿puedes darme tu nombre y email? Te contactaremos en menos de 2 horas 📧',
+  thanks: '¡Gracias! ✨ He registrado tu consulta en nuestro sistema. Un agente te contactará muy pronto.\n\nMientras tanto, puedes ver nuestras propiedades destacadas en la página. ¡Hasta pronto! 🌴',
+  default: 'Entendido 😊 Para darte la mejor asistencia, te recomiendo rellenar el formulario de contacto o llamarnos al **+34 971 30 00 00**. ¿Puedo ayudarte con algo más?',
+};
+
+const KEYWORD_MAP = [
+  { keys: ['vacacional', 'villa', 'verano', 'vacaciones', 'turismo', 'veranear'], resp: 'vacacional' },
+  { keys: ['larga', 'largo', 'mensual', 'año', 'contrato', 'vivir', 'residencia'], resp: 'larga' },
+  { keys: ['comprar', 'compra', 'venta', 'vender', 'adquirir', 'invertir', 'inversión'], resp: 'compra' },
+  { keys: ['precio', 'coste', 'cuánto', 'cuanto', 'tarifa', 'euro', '€', 'presupuesto'], resp: 'precios' },
+  { keys: ['email', 'correo', 'contacto', 'llamar', 'teléfono', 'gracias'], resp: 'capture' },
+];
+
+function getBotResponse(msg) {
+  const lower = msg.toLowerCase();
+  for (const { keys, resp } of KEYWORD_MAP) {
+    if (keys.some(k => lower.includes(k))) return BOT_RESPONSES[resp];
+  }
+  return BOT_RESPONSES.default;
+}
+
+function addMsg(text, type = 'bot') {
+  const div = document.createElement('div');
+  div.className = `msg ${type}`;
+  
+  const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+  
+  if (type === 'bot') {
+    div.innerHTML = `
+      <div class="msg-avatar">🏡</div>
+      <div class="msg-bubble">${formatted}</div>
+    `;
+  } else {
+    div.innerHTML = `<div class="msg-bubble">${formatted}</div>`;
+  }
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = 'typing';
+  div.innerHTML = `
+    <div class="msg-avatar">🏡</div>
+    <div class="msg-bubble">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function openChat() {
+  chatOpen = true;
+  const panel = document.getElementById('chat-panel');
+  panel.classList.add('open');
+  document.getElementById('chat-badge').style.display = 'none';
+  
+  if (chatMessages.children.length === 0) {
+    // Mensaje de bienvenida con delay
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addMsg(BOT_RESPONSES.greeting);
+    }, 800);
+  }
+}
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+  if (chatOpen) {
+    document.getElementById('chat-badge').style.display = 'none';
+    if (chatMessages.children.length === 0) {
+      showTyping();
+      setTimeout(() => { removeTyping(); addMsg(BOT_RESPONSES.greeting); }, 800);
+    }
+  }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  addMsg(text, 'user');
+  document.getElementById('quick-replies').style.display = 'none';
+
+  showTyping();
+  
+  // Simular latencia de IA
+  await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+  removeTyping();
+  
+  const response = getBotResponse(text);
+  addMsg(response);
+
+  // Si el usuario parece interesado, registrar en CRM
+  const lower = text.toLowerCase();
+  if (['sí', 'si', 'quiero', 'interesa', 'información', 'info'].some(k => lower.includes(k))) {
+    try {
+      await fetch(`${CRM_API}/clientes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: 'Lead Chat',
+          apellidos: 'Web',
+          tipo: 'AMBOS',
+          estado: 'NUEVO',
+          origen: 'CHAT_WEB',
+          notas: `Consulta por chat: "${text.substring(0, 200)}"`,
+        }),
+      });
+    } catch { /* CRM no disponible */ }
+  }
+}
+
+function sendQuickReply(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter') sendMessage();
+}
+
+// ─── TOAST ───────────────────────────────────────────────
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+// ─── NAV SCROLL EFFECT ────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  if (window.scrollY > 50) {
+    nav.style.background = 'rgba(13,27,42,0.97)';
+    nav.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)';
+  } else {
+    nav.style.background = 'rgba(13,27,42,0.85)';
+    nav.style.boxShadow = 'none';
+  }
+});
+
+// ─── SINCRONIZAR LEADS DE COLA ────────────────────────────
+async function syncLeadQueue() {
+  const queue = JSON.parse(localStorage.getItem('crm_lead_queue') || '[]');
+  if (queue.length === 0) return;
+
+  const synced = [];
+  for (const lead of queue) {
+    try {
+      const res = await fetch(`${CRM_API}/clientes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead),
+      });
+      if (res.ok) synced.push(lead);
+    } catch { break; }
+  }
+
+  if (synced.length > 0) {
+    const remaining = queue.filter(l => !synced.includes(l));
+    localStorage.setItem('crm_lead_queue', JSON.stringify(remaining));
+    console.log(`✅ Sincronizados ${synced.length} leads al CRM`);
+  }
+}
+
+// Intentar sincronizar leads pendientes al cargar
+syncLeadQueue();
+
+// Volver a intentar cada 30 segundos
+setInterval(syncLeadQueue, 30000);
+</script>
+
+</body>
+</html>

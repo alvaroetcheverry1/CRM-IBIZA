@@ -1,0 +1,74 @@
+[
+  {
+    "id": "LEAD-1773954901795",
+    "nombre": "Test Lead",
+    "apellidos": "Auto",
+    "email": "test@ibizaluxurydreams.com",
+    "telefono": null,
+    "tipo": "AMBOS",
+    "estado": "NUEVO",
+    "zonaInteres": null,
+    "presupuesto": null,
+    "origen": "WEB_LANDING",
+    "notas": "Interés: No especificado · Zona: Cualquiera · Fuente: Landing page Ibiza Luxury Dreams",
+    "_count": {
+      "actividades": 0
+    },
+    "creadoEn": "2026-03-19T21:15:01.795Z",
+    "actualizadoEn": "2026-03-19T21:15:01.795Z"
+  },
+  {
+    "id": "LEAD-1773954871716",
+    "nombre": "alvaro",
+    "apellidos": "etche",
+    "email": "alvarostrategy@gmail.com",
+    "telefono": "600565600",
+    "tipo": "COMPRADOR",
+    "estado": "NUEVO",
+    "zonaInteres": "Jesús",
+    "presupuesto": 10000000,
+    "origen": "WEB_LANDING",
+    "notas": "Interés: COMPRA · Zona: Jesús · Fuente: Landing page Ibiza Luxury Dreams",
+    "_count": {
+      "actividades": 0
+    },
+    "creadoEn": "2026-03-19T21:14:31.716Z",
+    "actualizadoEn": "2026-03-19T21:14:31.716Z"
+  },
+  {
+    "id": "LEAD-1773954871639",
+    "nombre": "alvaro",
+    "apellidos": "cs",
+    "email": "alvarostrategy@gmail.com",
+    "telefono": "600565600",
+    "tipo": "COMPRADOR",
+    "estado": "NUEVO",
+    "zonaInteres": "Jesús",
+    "presupuesto": 10000000,
+    "origen": "WEB_LANDING",
+    "notas": "Interés: COMPRA · Zona: Jesús · Fuente: Landing page Ibiza Luxury Dreams",
+    "_count": {
+      "actividades": 0
+    },
+    "creadoEn": "2026-03-19T21:14:31.639Z",
+    "actualizadoEn": "2026-03-19T21:14:31.639Z"
+  },
+  {
+    "id": "LEAD-1773954871536",
+    "nombre": "alvaro",
+    "apellidos": "etcheverry",
+    "email": "alvarostrategy@gm.com",
+    "telefono": "691785960",
+    "tipo": "COMPRADOR",
+    "estado": "NUEVO",
+    "zonaInteres": null,
+    "presupuesto": 10000000,
+    "origen": "WEB_LANDING",
+    "notas": "Interés: COMPRA · Zona: Cualquiera · Fuente: Landing page Ibiza Luxury Dreams",
+    "_count": {
+      "actividades": 0
+    },
+    "creadoEn": "2026-03-19T21:14:31.536Z",
+    "actualizadoEn": "2026-03-19T21:14:31.536Z"
+  }
+]

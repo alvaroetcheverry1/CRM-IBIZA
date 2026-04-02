@@ -1,0 +1,337 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model Usuario {
+  id           String     @id @default(cuid())
+  googleId     String?    @unique
+  email        String     @unique
+  nombre       String
+  apellidos    String?
+  avatar       String?
+  rol          String @default("AGENTE")
+  activo       Boolean    @default(true)
+  ultimoAcceso DateTime?
+  creadoEn     DateTime   @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  propiedades   Propiedad[]
+  documentos    Documento[]
+  actividades   Actividad[]
+  auditLogs     AuditLog[]
+}
+
+model Propietario {
+  id            String    @id @default(cuid())
+  nombre        String
+  apellidos     String
+  nif           String    // cifrado en uso real
+  telefono      String
+  telefonoAlternativo String?
+  email         String
+  direccion     String?
+  ciudad        String?
+  pais          String?   @default("España")
+  iban          String?   // cifrado en uso real
+  categoria     String @default("ESTANDAR")
+  notas         String?
+  urlDriveCarpeta String?
+  activo        Boolean   @default(true)
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  propiedades    Propiedad[]
+  contratos      ContratoMandato[]
+  documentos     Documento[]
+}
+
+model Propiedad {
+  id                String           @id @default(cuid())
+  referencia        String           @unique // ALQ-001, VTA-001
+  nombre            String
+  tipo              String
+  zona              String
+  municipio         String?
+  direccion         String?
+  latitud           Decimal?         
+  longitud          Decimal?         
+  habitaciones      Int
+  banos             Int
+  metrosConstruidos Decimal          
+  metrosParcela     Decimal?         
+  piscina           String      @default("NO")
+  garaje            Boolean          @default(false)
+  trastero          Boolean          @default(false)
+  ascensor          Boolean          @default(false)
+  terraza           Boolean          @default(false)
+  jardin            Boolean          @default(false)
+  vistasMar         Boolean          @default(false)
+  categoria         String @default("ESTANDAR")
+  estado            String  @default("DISPONIBLE")
+  caracteristicas   String?          // separadas por coma
+  descripcion       String?
+  urlDriveCarpeta   String?
+  fotoPrincipal     String?
+  fotos             String
+  activo            Boolean          @default(true)
+  creadoEn          DateTime         @default(now())
+  actualizadoEn     DateTime         @updatedAt
+
+  propietarioId     String?
+  propietario       Propietario?     @relation(fields: [propietarioId], references: [id])
+  agenteId          String?
+  agente            Usuario?         @relation(fields: [agenteId], references: [id])
+
+  // Datos específicos por tipo
+  alquilerVacacional AlquilerVacacional?
+  alquilerLargaDuracion AlquilerLargaDuracion?
+  venta             Venta?
+
+  documentos        Documento[]
+  actividades       Actividad[]
+  auditLogs         AuditLog[]
+
+  @@index([tipo, estado, zona])
+}
+
+model AlquilerVacacional {
+  id                 String    @id @default(cuid())
+  propiedadId        String    @unique
+  propiedad          Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  // Licencias
+  licenciaETV        String?
+  cedula             String?
+
+  // Tarifas (€ por semana)
+  precioTemporadaAlta   Decimal? 
+  precioTemporadaMedia  Decimal? 
+  precioTemporadaBaja   Decimal? 
+  depositoGarantia      Decimal? 
+
+  // Políticas
+  checkInHora        String?     @default("16:00")
+  checkOutHora       String?     @default("11:00")
+  instruccionesLlave String?
+  minimoNoches       Int?        @default(7)
+  personasMaximas    Int?
+
+  // Plataformas
+  urlAirbnb          String?
+  urlBooking         String?
+  urlMioweb          String?
+
+  reservas           Reserva[]
+}
+
+model Reserva {
+  id              String             @id @default(cuid())
+  alquilerVacacionalId String
+  alquilerVacacional AlquilerVacacional @relation(fields: [alquilerVacacionalId], references: [id])
+
+  clienteNombre   String
+  clienteTelefono String?
+  clienteEmail    String?
+  fechaEntrada    DateTime
+  fechaSalida     DateTime
+  noches          Int
+  personas        Int?
+  precioTotal     Decimal            
+  depositoCobrado Boolean            @default(false)
+  depositoDevuelto Boolean           @default(false)
+  temporada       String
+  notas           String?
+  origen          String?            @default("DIRECTO") // AIRBNB, BOOKING, DIRECTO
+  creadoEn        DateTime           @default(now())
+}
+
+model AlquilerLargaDuracion {
+  id              String    @id @default(cuid())
+  propiedadId     String    @unique
+  propiedad       Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  // Contrato
+  inquilinoNombre String?
+  inquilinoNif    String?
+  inquilinoTelefono String?
+  inquilinoEmail  String?
+  fechaInicio     DateTime?
+  duracionMeses   Int?      @default(12)
+  fechaVencimiento DateTime?
+  rentaMensual    Decimal?  
+  fianzaMeses     Int?      @default(2)
+  fianzaImporte   Decimal?  
+
+  // Control de pagos
+  diaPagoCada     Int?      @default(1) // día del mes
+  ipcUltimaActualizacion DateTime?
+  
+  pagos           PagoRenta[]
+}
+
+model PagoRenta {
+  id                    String              @id @default(cuid())
+  alquilerLargaDuracionId String
+  alquilerLargaDuracion AlquilerLargaDuracion @relation(fields: [alquilerLargaDuracionId], references: [id])
+
+  mes             DateTime  // Primer día del mes al que corresponde
+  importe         Decimal   
+  estado          String @default("PENDIENTE")
+  fechaCobro      DateTime?
+  notas           String?
+  creadoEn        DateTime  @default(now())
+}
+
+model Venta {
+  id              String         @id @default(cuid())
+  propiedadId     String         @unique
+  propiedad       Propiedad      @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  precioVenta     Decimal?       
+  precioMinimo    Decimal?        // campo privado
+  referenciaCatastral String?
+  numRegistroPropiedad String?
+  estadoHipotecario String @default("LIBRE")
+  comisionAgencia Decimal?         // porcentaje
+  etapaPipeline   String  @default("CAPTACION")
+  fechaArras      DateTime?
+  fechaEscritura  DateTime?
+  notario         String?
+  observaciones   String?
+}
+
+model Cliente {
+  id            String      @id @default(cuid())
+  nombre        String
+  apellidos     String?
+  telefono      String?
+  email         String?
+  tipo          String @default("AMBOS")
+  estado        String  @default("NUEVO")
+  presupuesto   Decimal?    
+  zonaInteres   String?
+  habitacionesMin Int?
+  habitacionesMax Int?
+  notas         String?
+  origen        String?     // WEB, REFERIDO, PORTAL, LLAMADA
+  urlDriveCarpeta String?
+  activo        Boolean     @default(true)
+  creadoEn      DateTime    @default(now())
+  actualizadoEn DateTime    @updatedAt
+
+  actividades   Actividad[]
+  documentos    Documento[]
+}
+
+model ContratoMandato {
+  id              String      @id @default(cuid())
+  propietarioId   String
+  propietario     Propietario @relation(fields: [propietarioId], references: [id])
+
+  fechaFirma      DateTime?
+  duracionMeses   Int?        @default(12)
+  fechaVencimiento DateTime?
+  exclusividad    Boolean     @default(false)
+  comisionVenta   Decimal?    
+  comisionAlquiler Decimal?   
+  urlDocumento    String?
+  notas           String?
+  creadoEn        DateTime    @default(now())
+}
+
+model Documento {
+  id              String              @id @default(cuid())
+  nombre          String
+  tipo            String       @default("OTRO")
+  mimeType        String?
+  tamanoBytes     Int?
+  urlDrive        String?
+  driveFileId     String?
+  estadoProcesamiento String @default("PENDIENTE")
+  datosExtraidos  String?               // JSON de la extracción IA  
+  errorProcesamiento String?
+  
+  propiedadId     String?
+  propiedad       Propiedad?          @relation(fields: [propiedadId], references: [id])
+  propietarioId   String?
+  propietario     Propietario?        @relation(fields: [propietarioId], references: [id])
+  clienteId       String?
+  cliente         Cliente?            @relation(fields: [clienteId], references: [id])
+  subidoPorId     String?
+  subidoPor       Usuario?            @relation(fields: [subidoPorId], references: [id])
+
+  creadoEn        DateTime            @default(now())
+}
+
+model Actividad {
+  id          String    @id @default(cuid())
+  tipo        String    // LLAMADA, EMAIL, VISITA, NOTA, TAREA
+  descripcion String
+  fecha       DateTime  @default(now())
+
+  propiedadId String?
+  propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
+  clienteId   String?
+  cliente     Cliente?   @relation(fields: [clienteId], references: [id])
+  usuarioId   String?
+  usuario     Usuario?   @relation(fields: [usuarioId], references: [id])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  accion      String    // CREATE, UPDATE, DELETE
+  entidad     String    // Propiedad, Cliente, etc.
+  entidadId   String
+  datos       String?     // snapshot antes/después
+  ip          String?
+  fecha       DateTime  @default(now())
+
+  usuarioId   String?
+  usuario     Usuario?  @relation(fields: [usuarioId], references: [id])
+  propiedadId String?
+  propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
+}
