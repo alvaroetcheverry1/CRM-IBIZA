@@ -135,6 +135,7 @@ model Propiedad {
   documentos        Documento[]
   actividades       Actividad[]
   auditLogs         AuditLog[]
+  reservasExternas  ReservaExterna[]
 
   @@index([tipo, estado, zona])
 }
@@ -336,3 +337,19 @@ model AuditLog {
   propiedadId String?
   propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
 }
+
+model ReservaExterna {
+  id          String    @id @default(cuid())
+  uid         String
+  origen      String    // AIRBNB | BOOKING
+  fechaInicio DateTime
+  fechaFin    DateTime
+  titulo      String?
+  syncedAt    DateTime  @default(now())
+
+  propiedadId String
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  @@unique([uid, propiedadId])
+}
+

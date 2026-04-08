@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { propiedadesApi } from '../services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { propiedadesApi, icalApi } from '../services/api';
 import {
   ChevronLeft, ChevronRight, Calendar, Send, Search, Bed, Bath,
   MapPin, Check, X, Mail, Loader2, UserCircle2, RefreshCcw
@@ -277,12 +277,12 @@ function SyncModal({ propiedad, onClose, onSyncSuccess }) {
     }
     setSyncing(true);
     try {
-      // Simular llamada a API
-      await new Promise(r => setTimeout(r, 2000));
-      toast.success('Calendarios descargados y fusionados con éxito.');
-      onSyncSuccess({ airbnb: !!urlAirbnb, booking: !!urlBooking });
-    } catch (e) {
-      toast.error('Error al sincronizar calendarios');
+      const result = await icalApi.sync({ propiedadId: propiedad.id, urlAirbnb: urlAirbnb || null, urlBooking: urlBooking || null });
+      toast.success(`${result.totalImportados} eventos importados correctamente.`);
+      onSyncSuccess({ airbnb: !!urlAirbnb, booking: !!urlBooking, syncedAt: new Date() });
+    } catch (err) {
+      // Si la URL iCal es de Airbnb y el CORS bloquea, informamos al usuario
+      toast.error('No se pudo conectar con la URL iCal. Asegúrate de que la URL sea pública y termine en .ics');
     } finally {
       setSyncing(false);
     }

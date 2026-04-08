@@ -16,6 +16,9 @@ const dashboardRoutes = require('./routes/dashboard');
 const reservasRoutes = require('./routes/reservas');
 const pagosRoutes = require('./routes/pagos');
 const facturasRoutes = require('./routes/facturas');
+const matchmakingRoutes = require('./routes/matchmaking');
+const icalRoutes = require('./routes/ical');
+const whatsappRoutes = require('./routes/whatsapp');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,6 +76,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reservas', reservasRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/facturas', facturasRoutes);
+app.use('/api/matchmaking', matchmakingRoutes);
+app.use('/api/ical', icalRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/health', (req, res) => {

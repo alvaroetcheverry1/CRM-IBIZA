@@ -301,4 +301,21 @@ export const facturasApi = {
   }
 };
 
+export const matchmakingApi = {
+  getMatches: (propiedadId) => apiCall(`/matchmaking/${propiedadId}`),
+  enviarDossier: (data) => apiCall('/matchmaking/enviar-dossier', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const icalApi = {
+  sync: (data) => apiCall('/ical/sync', { method: 'POST', body: JSON.stringify(data) }),
+  getReservas: (propiedadId) => apiCall(`/ical/${propiedadId}`),
+};
+
+export const whatsappApi = {
+  sendMessage: (data) => apiCall('/whatsapp/message', { method: 'POST', body: JSON.stringify(data) }),
+  guardarLead: (data) => apiCall('/whatsapp/guardar-lead', { method: 'POST', body: JSON.stringify(data) }),
+  getLeadsRecientes: () => apiCall('/whatsapp/leads-recientes'),
+};
+
 export default {};
+
