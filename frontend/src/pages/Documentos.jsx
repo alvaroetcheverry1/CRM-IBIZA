@@ -361,33 +361,30 @@ export default function Documentos() {
 
   const handleCrearPropiedadDesdeDoc = async ({ nombre, tipo, zona, precio }) => {
     try {
-      const propData = {
+      const body = {
         nombre,
         tipo,
         zona,
         habitaciones: 0,
         banos: 0,
         metrosConstruidos: 0,
-        propietarioId: (propData2?.data?.[0]?.id) || null,
       };
 
       const precioNum = parseInt((precio || '').replace(/[^0-9]/g, ''), 10) || 0;
-      if (tipo === 'VENTA') propData.venta = { precioVenta: precioNum };
-      if (tipo === 'VACACIONAL') propData.alquilerVacacional = { precioTemporadaAlta: precioNum };
-      if (tipo === 'LARGA_DURACION') propData.alquilerLargaDuracion = { rentaMensual: precioNum };
+      if (tipo === 'VENTA') body.venta = { precioVenta: precioNum };
+      if (tipo === 'VACACIONAL') body.alquilerVacacional = { precioTemporadaAlta: precioNum };
+      if (tipo === 'LARGA_DURACION') body.alquilerLargaDuracion = { rentaMensual: precioNum };
 
-      await propiedadesApi.create(propData);
+      await propiedadesApi.create(body);
       queryClient.invalidateQueries({ queryKey: ['propiedades'] });
       queryClient.invalidateQueries({ queryKey: ['propiedades-mini'] });
-      toast.success(`✅ Propiedad "${nombre}" creada en el CRM como ${tipo === 'VENTA' ? 'Venta' : tipo === 'VACACIONAL' ? 'Alquiler Vacacional' : 'Larga Duración'}`, { duration: 4000 });
+      toast.success(`✅ Propiedad "${nombre}" creada en el CRM`, { duration: 4000 });
       setPendingDocName(null);
     } catch (err) {
       toast.error('Error al crear la propiedad: ' + (err.message || 'desconocido'));
     }
   };
 
-  // Fetch propietarios for optional linking
-  const { data: propData2 } = useQuery({ queryKey: ['propietarios-snap'], queryFn: () => propietariosApi.list({ limit: 1 }) });
 
   const fetchedDocs = data?.data || [];
 
