@@ -2,39 +2,43 @@ const OpenAI = require('openai').default;
 const { logger } = require('../utils/logger');
 const { prisma } = require('../utils/prisma');
 
-const SISTEMA_PROMPT = `Eres un asistente experto en análisis de documentación inmobiliaria de alto standing.
-Tu tarea es extraer información estructurada de documentos de propiedades inmobiliarias en Mallorca y Baleares.
+const SISTEMA_PROMPT = `Eres un experto en análisis de documentación inmobiliaria de lujo en Ibiza y las Islas Baleares.
+Tu tarea es leer el texto extraído de un PDF o presentación de una propiedad y devolver un JSON con los campos detectados.
 
-Analiza el documento y extrae en formato JSON los siguientes campos:
+CAMPOS A EXTRAER:
 {
-  "nombre": "Nombre de la villa o propiedad",
-  "zona": "Zona o municipio (ej: Pollença, Alcúdia, Sóller, Deià...)",
-  "municipio": "Municipio exacto",
-  "habitaciones": número entero,
-  "banos": número entero,
-  "metrosConstruidos": número decimal,
-  "metrosParcela": número decimal o null,
-  "piscina": "SI" | "NO" | "COMUNITARIA",
-  "garaje": true/false,
-  "terraza": true/false,
-  "jardin": true/false,
-  "vistasMar": true/false,
-  "precioVenta": número en euros o null,
-  "precioAlquilerTemporadaAlta": número en euros/semana o null,
-  "precioAlquilerTemporadaMedia": número en euros/semana o null,
-  "precioAlquilerTemporadaBaja":  número en euros/semana o null,
-  "licenciaETV": "código de licencia" o null,
-  "referenciaCatastral": "referencia" o null,
-  "caracteristicas": ["característica 1", "característica 2", ...],
-  "descripcion": "descripción general del inmueble",
-  "propietarioNombre": "nombre del propietario o null si no aparece",
-  "observaciones": "cualquier información adicional relevante"
+  "nombre": "Nombre de la villa o propiedad (ej: Villa Can Rimbau, Finca Las Salinas)",
+  "tipo": "VACACIONAL o VENTA o LARGA_DURACION — dedúcelo del contexto",
+  "zona": "Zona de Ibiza (ej: Sant Josep, Jesus, Talamanca, Las Salinas, Santa Eulalia)",
+  "municipio": "Municipio exacto o null",
+  "habitaciones": numero entero,
+  "banos": numero entero,
+  "metrosConstruidos": numero decimal solo el numero sin simbolo m2,
+  "metrosParcela": numero decimal o null,
+  "piscina": "SI" o "NO" o "COMUNITARIA",
+  "garaje": true o false,
+  "terraza": true o false,
+  "jardin": true o false,
+  "vistasMar": true o false,
+  "ascensor": true o false,
+  "caracteristicas": ["lista de caracteristicas especiales"],
+  "descripcion": "descripcion detallada del inmueble en espanol de 3-4 frases",
+  "precioVenta": numero en euros o null,
+  "precioAlquilerTemporadaAlta": numero en euros semana o null,
+  "precioAlquilerTemporadaMedia": numero en euros semana o null,
+  "precioAlquilerTemporadaBaja": numero en euros semana o null,
+  "rentaMensual": numero en euros mes para larga duracion o null,
+  "licenciaETV": "codigo de licencia turistica ETV-IBI-XXXXX" o null,
+  "propietarioNombre": "nombre completo del propietario" o null,
+  "propietarioTelefono": "numero de telefono del propietario con prefijo" o null,
+  "propietarioEmail": "email del propietario" o null,
+  "notas": "cualquier informacion adicional relevante"
 }
 
-REGLAS CRÍTICAS:
-- Si un campo no aparece en el documento, devuelve null (no inventes valores).
-- Precios siempre en euros (€), convierte si están en otra moneda.
-- Responde ÚNICAMENTE con el JSON válido, sin texto adicional, sin markdown.`;
+REGLAS CRITICAS:
+- Si un campo NO aparece en el documento devuelve null NO inventes valores.
+- Los precios SIEMPRE en euros numericos sin simbolo ni puntos de miles.
+- Responde UNICAMENTE con el JSON valido sin texto adicional sin markdown.`;
 
 class IAService {
   constructor() {
@@ -43,19 +47,93 @@ class IAService {
   }
 
   /**
-   * Extraer texto de PDF (simplificado - en producción usar Google Document AI)
+   * Extraer texto de PDF con pdf-parse
    */
   async extraerTextoPDF(buffer) {
     try {
-      // Intentar con pdf-parse si está disponible
       const pdfParse = require('pdf-parse');
       const data = await pdfParse(buffer);
       return data.text;
     } catch {
-      // Fallback: devolver indicación para que GPT-4 Vision procese la imagen
       return null;
     }
   }
+
+  /**
+   * NUEVO: Analiza un PDF completo y devuelve JSON estructurado SIN modificar la DB.
+   * Usado por el endpoint /api/propiedades/analizar-pdf para pre-rellenar el formulario.
+   */
+  async analizarPDFCompleto(buffer, filename = 'documento.pdf') {
+    logger.info(`IA: analizando PDF "${filename}" (${Math.round(buffer.length / 1024)} KB)`);
+
+    // Mock enriquecido cuando no hay clave de OpenAI (para desarrollo)
+    if (!this.enabled) {
+      logger.info('IA (mock): análisis PDF simulado');
+      return {
+        nombre: 'Villa Can Xomeu (Extraída por IA)',
+        tipo: 'VACACIONAL',
+        zona: 'Sant Josep de sa Talaia',
+        municipio: 'Sant Josep',
+        habitaciones: 5,
+        banos: 4,
+        metrosConstruidos: 380,
+        metrosParcela: 2500,
+        piscina: 'SI',
+        garaje: true,
+        terraza: true,
+        jardin: true,
+        vistasMar: true,
+        ascensor: false,
+        caracteristicas: ['Piscina infinity', 'Vistas panorámicas al mar', 'Cocina americana equipada', 'Domótica Crestron', 'Barbacoa exterior'],
+        descripcion: 'Excepcional villa de diseño contemporáneo situada en la privilegiada zona de Sant Josep, con impresionantes vistas al mar y atardecer. Distribuida en dos plantas con amplios espacios interiores y exteriores cuidadosamente diseñados para el disfrute del lujo y la privacidad.',
+        precioVenta: null,
+        precioAlquilerTemporadaAlta: 18500,
+        precioAlquilerTemporadaMedia: 12000,
+        precioAlquilerTemporadaBaja: 7500,
+        rentaMensual: null,
+        licenciaETV: 'ETV-0123-IB',
+        propietarioNombre: 'Carlos Martínez López',
+        propietarioTelefono: '+34 626 123 456',
+        propietarioEmail: 'carlos.martinez@email.com',
+        notas: 'Propiedad recién reformada en 2023. Cliente prefiere alquiler de mínimo 7 noches.',
+        _mock: true,
+      };
+    }
+
+    const textoPDF = await this.extraerTextoPDF(buffer);
+
+    if (!textoPDF || textoPDF.trim().length < 30) {
+      throw new Error('No se pudo extraer texto del PDF. Asegúrate de que no sea un PDF escaneado sin OCR.');
+    }
+
+    logger.info(`IA: texto extraído del PDF (${textoPDF.length} chars), enviando a GPT-4o`);
+
+    const response = await this.client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: SISTEMA_PROMPT },
+        {
+          role: 'user',
+          content: `Analiza el siguiente documento de propiedad inmobiliaria en Ibiza:\n\n${textoPDF.substring(0, 16000)}`,
+        },
+      ],
+      temperature: 0.05,
+      max_tokens: 2500,
+      response_format: { type: 'json_object' },
+    });
+
+    const raw = response.choices[0].message.content;
+    let datos;
+    try {
+      datos = JSON.parse(raw);
+    } catch {
+      throw new Error('La IA devolvió un JSON inválido');
+    }
+
+    logger.info(`IA: extracción completa para "${filename}"`);
+    return datos;
+  }
+
 
   /**
    * Procesa un documento PDF y extrae datos de la propiedad mediante IA

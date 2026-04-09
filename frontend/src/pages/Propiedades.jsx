@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { propiedadesApi, propietariosApi } from '../services/api';
-import { MapPin, Bed, Bath, Square, Plus, Search, X, Loader2 } from 'lucide-react';
+import { MapPin, Bed, Bath, Square, Plus, Search, X, Loader2, FileText, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AnalizarPDFModal from '../components/AnalizarPDFModal';
+import CrearDesdeFotosModal from '../components/CrearDesdeFotosModal';
 
 const TIPO_LABEL = { VACACIONAL: 'Vacacional', LARGA_DURACION: 'Larga Duración', VENTA: 'Venta' };
 const ESTADO_BADGE = {
@@ -208,6 +210,17 @@ export default function Propiedades() {
   const [estado, setEstado] = useState('');
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [showPDFModal, setShowPDFModal] = useState(false);
+  const [showFotosModal, setShowFotosModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropRef = useRef();
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handler = e => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowDropdown(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ['propiedades', tipo, estado, page],
@@ -218,26 +231,116 @@ export default function Propiedades() {
     !search || p.nombre.toLowerCase().includes(search.toLowerCase()) || p.zona.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleCrear = async ({ nombre, tipo: t, zona, habitaciones, banos, metrosConstruidos, precio, propietarioId }) => {
+  const handleCrear = async (propData) => {
     try {
-      const propData = { nombre, tipo: t, zona, habitaciones, banos, metrosConstruidos, propietarioId: propietarioId || undefined };
-      const precioNum = parseInt((precio || '').replace(/[^0-9]/g, ''), 10) || 0;
-      if (t === 'VENTA') propData.venta = { precioVenta: precioNum };
-      if (t === 'VACACIONAL') propData.alquilerVacacional = { precioTemporadaAlta: precioNum };
-      if (t === 'LARGA_DURACION') propData.alquilerLargaDuracion = { rentaMensual: precioNum };
-      const created = await propiedadesApi.create(propData);
+      const precioNum = parseInt(((propData.precio || '')).replace(/[^0-9]/g, ''), 10) || 0;
+      const body = { ...propData };
+      delete body.precio;
+      if (propData.tipo === 'VENTA') body.venta = { precioVenta: precioNum };
+      if (propData.tipo === 'VACACIONAL') body.alquilerVacacional = { precioTemporadaAlta: precioNum };
+      if (propData.tipo === 'LARGA_DURACION') body.alquilerLargaDuracion = { rentaMensual: precioNum };
+      const created = await propiedadesApi.create(body);
       queryClient.invalidateQueries({ queryKey: ['propiedades'] });
-      toast.success(`✅ Propiedad "${nombre}" creada en el CRM`);
+      toast.success(`✅ Propiedad "${propData.nombre}" creada en el CRM`);
       setShowModal(false);
       if (created?.id) navigate(`/propiedades/${created.id}`);
+      return created;
     } catch (err) {
       toast.error('Error al crear la propiedad: ' + (err.message || 'desconocido'));
+      throw err;
+    }
+  };
+
+  // Crear desde datos extraídos del PDF (con auto-create propietario)
+  const handleCrearDesdePDF = async (datos) => {
+    try {
+      const body = {
+        nombre: datos.nombre,
+        tipo: datos.tipo || 'VACACIONAL',
+        zona: datos.zona,
+        municipio: datos.municipio || undefined,
+        habitaciones: Number(datos.habitaciones) || 0,
+        banos: Number(datos.banos) || 0,
+        metrosConstruidos: Number(datos.metrosConstruidos) || 0,
+        metrosParcela: datos.metrosParcela ? Number(datos.metrosParcela) : undefined,
+        piscina: datos.piscina || 'NO',
+        garaje: !!datos.garaje,
+        terraza: !!datos.terraza,
+        jardin: !!datos.jardin,
+        vistasMar: !!datos.vistasMar,
+        ascensor: !!datos.ascensor,
+        caracteristicas: Array.isArray(datos.caracteristicas) ? datos.caracteristicas.join(', ') : (datos.caracteristicas || ''),
+        descripcion: datos.descripcion || undefined,
+        notas: datos.notas || undefined,
+      };
+
+      // Precios según tipo
+      if (body.tipo === 'VENTA' && datos.precioVenta)
+        body.venta = { precioVenta: Number(datos.precioVenta) };
+      if (body.tipo === 'VACACIONAL')
+        body.alquilerVacacional = {
+          precioTemporadaAlta: Number(datos.precioAlquilerTemporadaAlta) || 0,
+          precioTemporadaMedia: Number(datos.precioAlquilerTemporadaMedia) || undefined,
+          precioTemporadaBaja: Number(datos.precioAlquilerTemporadaBaja) || undefined,
+          licenciaETV: datos.licenciaETV || undefined,
+        };
+      if (body.tipo === 'LARGA_DURACION' && datos.rentaMensual)
+        body.alquilerLargaDuracion = { rentaMensual: Number(datos.rentaMensual) };
+
+      // Auto-crear propietario si vienen datos
+      if (datos.propietarioNombre) {
+        try {
+          const propietario = await propietariosApi.create({
+            nombre: datos.propietarioNombre.split(' ')[0] || datos.propietarioNombre,
+            apellidos: datos.propietarioNombre.split(' ').slice(1).join(' ') || '',
+            telefono: datos.propietarioTelefono || '',
+            email: datos.propietarioEmail || '',
+            tipo: 'PROPIETARIO',
+            activo: true,
+          });
+          body.propietarioId = propietario.id;
+        } catch { /* no bloquear la creación si falla el propietario */ }
+      }
+
+      const created = await propiedadesApi.create(body);
+      queryClient.invalidateQueries({ queryKey: ['propiedades'] });
+      toast.success(`✅ Propiedad "${datos.nombre}" creada desde PDF`);
+      setShowPDFModal(false);
+      if (created?.id) navigate(`/propiedades/${created.id}`);
+      return created;
+    } catch (err) {
+      toast.error('Error al crear propiedad desde PDF: ' + (err.message || 'desconocido'));
+      throw err;
+    }
+  };
+
+  // Crear desde fotos sueltas
+  const handleCrearDesdeFotos = async (propData, opts = {}) => {
+    try {
+      const body = {
+        ...propData,
+        habitaciones: 0,
+        banos: 0,
+        metrosConstruidos: 0,
+      };
+      const created = await propiedadesApi.create(body);
+      queryClient.invalidateQueries({ queryKey: ['propiedades'] });
+      if (!opts.skipRedirect && created?.id) navigate(`/propiedades/${created.id}`);
+      return created;
+    } catch (err) {
+      toast.error('Error al crear la propiedad: ' + (err.message || 'desconocido'));
+      throw err;
     }
   };
 
   return (
     <div>
       {showModal && <ModalNuevaPropiedad onClose={() => setShowModal(false)} onCrear={handleCrear} />}
+      {showPDFModal && <AnalizarPDFModal onClose={() => setShowPDFModal(false)} onCreate={handleCrearDesdePDF} />}
+      {showFotosModal && <CrearDesdeFotosModal
+        onClose={(created) => { setShowFotosModal(false); if (created?.id) navigate(`/propiedades/${created.id}`); }}
+        onCreate={handleCrearDesdeFotos}
+      />}
 
       <div className="page-header">
         <div className="page-header-left">
@@ -245,10 +348,62 @@ export default function Propiedades() {
           <p>Portfolio completo — {data?.meta?.total ?? 0} propiedades</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            <Plus size={16} />
-            Nueva Propiedad
-          </button>
+          {/* Dropdown triple */}
+          <div ref={dropRef} style={{ position: 'relative' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowDropdown(p => !p)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <Plus size={16} /> Nueva Propiedad <ChevronDown size={13} />
+            </button>
+            {showDropdown && (
+              <div style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+                background: 'white', border: '1px solid #E2E8F0', borderRadius: 10,
+                boxShadow: '0 10px 30px rgba(0,0,0,0.12)', minWidth: 220, zIndex: 100, overflow: 'hidden'
+              }}>
+                <button
+                  onClick={() => { setShowModal(true); setShowDropdown(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '0.85rem 1.1rem', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', color: '#0F172A', fontWeight: 600, fontSize: '0.88rem' }}
+                >
+                  <div style={{ width: 32, height: 32, background: '#EFF6FF', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Plus size={16} color="#1A3A5C" />
+                  </div>
+                  <div>
+                    <div>Crear manualmente</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 400 }}>Formulario en blanco</div>
+                  </div>
+                </button>
+                <div style={{ height: 1, background: '#F1F5F9' }} />
+                <button
+                  onClick={() => { setShowPDFModal(true); setShowDropdown(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '0.85rem 1.1rem', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', color: '#0F172A', fontWeight: 600, fontSize: '0.88rem' }}
+                >
+                  <div style={{ width: 32, height: 32, background: '#F0FDF4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileText size={16} color="#059669" />
+                  </div>
+                  <div>
+                    <div>Crear desde PDF ✨ IA</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 400 }}>Extracción automática de datos</div>
+                  </div>
+                </button>
+                <div style={{ height: 1, background: '#F1F5F9' }} />
+                <button
+                  onClick={() => { setShowFotosModal(true); setShowDropdown(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '0.85rem 1.1rem', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', color: '#0F172A', fontWeight: 600, fontSize: '0.88rem' }}
+                >
+                  <div style={{ width: 32, height: 32, background: '#FEF3C7', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ImageIcon size={16} color="#D97706" />
+                  </div>
+                  <div>
+                    <div>Crear desde Fotos</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 400 }}>Sube fotos + descripción</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

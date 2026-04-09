@@ -1,11 +1,36 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const { body, query, param, validationResult } = require('express-validator');
 const { authenticate, requireRole, isDirectivo } = require('../middleware/auth');
 const { prisma } = require('../utils/prisma');
 const { auditLog } = require('../utils/audit');
 const { sheetsService } = require('../services/sheetsService');
 const { driveService } = require('../services/driveService');
+const { iaService } = require('../services/iaService');
+
+const uploadPDF = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Solo se aceptan PDFs e imágenes'), false);
+  },
+});
+
+// ─── POST /api/propiedades/analizar-pdf ─────────────────────
+// Analiza un PDF y devuelve datos estructurados sin crear nada en DB
+router.post('/analizar-pdf', authenticate, uploadPDF.single('pdf'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se ha enviado ningún archivo PDF' });
+
+  try {
+    const datos = await iaService.analizarPDFCompleto(req.file.buffer, req.file.originalname);
+    res.json({ ok: true, datos });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al analizar el PDF', detail: err.message });
+  }
+});
+
 
 // Helper de errores de validación
 const handleValidation = (req, res) => {
