@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
 import { Building2, Users, UserCheck, TrendingUp, Calendar, AlertTriangle, Trophy, Target } from 'lucide-react';
@@ -21,9 +22,11 @@ function RelativoFecha({ date }) {
 }
 
 export default function Dashboard() {
+  const [mesesFiltro, setMesesFiltro] = useState(12);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: dashboardApi.getStats,
+    queryKey: ['dashboard', mesesFiltro],
+    queryFn: () => dashboardApi.getStats(mesesFiltro),
   });
 
   if (isLoading) {
@@ -125,10 +128,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ─── Gráfica Ingresos Mensuales (12 meses) ─────────── */}
+      {/* ─── Gráfica Ingresos Mensuales ─────────── */}
       <div className="card">
-        <div className="card-header">
-          <h3>📈 Ingresos Mensuales — Últimos 12 Meses</h3>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3>📈 Ingresos Mensuales</h3>
+          <select 
+            value={mesesFiltro} 
+            onChange={(e) => setMesesFiltro(e.target.value)}
+            style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid #EDE9E0', background: '#F8F9FA', fontSize: '0.85rem', color: '#1A3A5C', fontWeight: 500, outline: 'none', cursor: 'pointer' }}
+          >
+            <option value={1}>Último Mes</option>
+            <option value={3}>3 Meses</option>
+            <option value={6}>6 Meses</option>
+            <option value={12}>Último Año</option>
+            <option value={24}>2 Años</option>
+            <option value={36}>3 Años</option>
+            <option value={60}>5 Años</option>
+            <option value="total">Total Histórico</option>
+          </select>
         </div>
         <div className="card-body">
           {ingresosMensuales.some(m => m.ingresos > 0) ? (

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '../services/api';
-import { Plus, Search, Phone, Mail, ChevronRight, X, Save, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Phone, Mail, ChevronRight, X, Save, Loader2, Pencil, Trash2, Bot } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ActividadTimeline from '../components/ActividadTimeline';
+import MatchmakingClienteModal from '../components/MatchmakingClienteModal';
 
 const ESTADOS = ['NUEVO', 'CONTACTADO', 'VISITA', 'OFERTA', 'CERRADO', 'DESCARTADO'];
 const TIPOS   = ['COMPRADOR', 'INQUILINO', 'AMBOS'];
@@ -21,7 +23,7 @@ const TIPO_ICON = { COMPRADOR: '🏛', INQUILINO: '🔑', AMBOS: '🌐' };
 // ─── Drawer de detalle / edición de cliente ─────────────────────────────────
 function ClienteDrawer({ cliente, onClose }) {
   const qc = useQueryClient();
-  const [edit, setEdit]     = useState(false);
+  const [edit, setEdit]     = useState(cliente.id === 'nueva');
   const [saving, setSaving] = useState(false);
   const [form, setForm]     = useState({
     nombre:          cliente.nombre          ?? '',
@@ -37,6 +39,7 @@ function ClienteDrawer({ cliente, onClose }) {
     origen:          cliente.origen           ?? '',
     notas:           cliente.notas            ?? '',
   });
+  const [showMatchModal, setShowMatchModal] = useState(false);
 
   function setField(k, v) { setForm(prev => ({ ...prev, [k]: v })); }
 
@@ -44,15 +47,25 @@ function ClienteDrawer({ cliente, onClose }) {
     if (!form.nombre.trim()) return toast.error('El nombre es obligatorio');
     setSaving(true);
     try {
-      await clientesApi.update(cliente.id, {
+      const payload = {
         ...form,
         presupuesto:     form.presupuesto     ? Number(form.presupuesto)     : null,
         habitacionesMin: form.habitacionesMin ? Number(form.habitacionesMin) : null,
         habitacionesMax: form.habitacionesMax ? Number(form.habitacionesMax) : null,
-      });
-      qc.invalidateQueries({ queryKey: ['clientes'] });
-      toast.success('✅ Cliente actualizado');
-      setEdit(false);
+      };
+
+      if (cliente.id === 'nueva') {
+        await clientesApi.create(payload);
+        qc.invalidateQueries({ queryKey: ['clientes'] });
+        qc.invalidateQueries({ queryKey: ['dashboard'] });
+        toast.success('✅ Cliente creado');
+        onClose();
+      } else {
+        await clientesApi.update(cliente.id, payload);
+        qc.invalidateQueries({ queryKey: ['clientes'] });
+        toast.success('✅ Cliente actualizado');
+        setEdit(false);
+      }
     } catch (err) {
       toast.error('Error al guardar: ' + (err.message || 'desconocido'));
     } finally {
@@ -98,11 +111,13 @@ function ClienteDrawer({ cliente, onClose }) {
                 {TIPO_ICON[cliente.tipo]}
               </div>
               <div>
-                <h3 style={{ margin: 0 }}>{cliente.nombre} {cliente.apellidos}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 600 }}>{cliente.tipo}</span>
-                  <span style={{ background: estadoColor[cliente.estado] || 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 600 }}>{cliente.estado}</span>
-                </div>
+                <h3 style={{ margin: 0 }}>{cliente.id === 'nueva' ? 'Nuevo Cliente/Lead' : `${cliente.nombre} ${cliente.apellidos}`}</h3>
+                {cliente.id !== 'nueva' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 600 }}>{cliente.tipo}</span>
+                    <span style={{ background: estadoColor[cliente.estado] || 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 600 }}>{cliente.estado}</span>
+                  </div>
+                )}
               </div>
             </div>
             <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}><X size={20} /></button>
@@ -138,7 +153,7 @@ function ClienteDrawer({ cliente, onClose }) {
                 <F label="Hab. máximas">{inp('habitacionesMax', 'number')}</F>
                 <F label="Origen">
                   <select className="form-select" value={form.origen} onChange={e => setField('origen', e.target.value)} style={{ width: '100%', fontSize: '0.875rem' }}>
-                    {['','WEB','REFERIDO','PORTAL','REDES_SOCIALES','LLAMADA','OTRO'].map(o => <option key={o} value={o}>{o || '— Sin especificar —'}</option>)}
+                    {['','WEB','EMAIL','WHATSAPP','REDES_SOCIALES','PORTAL','REFERIDO','LLAMADA','OTRO'].map(o => <option key={o} value={o}>{o || '— Sin especificar —'}</option>)}
                   </select>
                 </F>
               </div>
@@ -199,6 +214,21 @@ function ClienteDrawer({ cliente, onClose }) {
                   <div style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, background: '#F8FAFC', padding: '0.75rem', borderRadius: 8 }}>{cliente.notas}</div>
                 </F>
               )}
+
+              {/* Matchmaking IA */}
+              <div style={{ marginTop: '0.75rem' }}>
+                <button
+                  onClick={() => setShowMatchModal(true)}
+                  style={{ width: '100%', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 8, padding: '0.85rem', color: '#1E3A8A', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s' }}
+                >
+                  <Bot size={18} color="#4F46E5" /> 🔍 Matchmaking IA (Buscar Propiedades)
+                </button>
+              </div>
+
+              {/* Historial de actividad */}
+              <div style={{ marginTop: '0.5rem' }}>
+                <ActividadTimeline clienteId={cliente.id} />
+              </div>
             </>
           )}
         </div>
@@ -220,14 +250,17 @@ function ClienteDrawer({ cliente, onClose }) {
               </button>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                 <button onClick={onClose} style={{ border: '1px solid #CBD5E1', background: 'white', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: '0.85rem', color: '#64748B' }}>Cerrar</button>
-                <button onClick={() => setEdit(true)} style={{ background: '#1A3A5C', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Pencil size={15} /> Editar
-                </button>
+                {cliente.id !== 'nueva' && (
+                  <button onClick={() => setEdit(true)} style={{ background: '#1A3A5C', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Pencil size={15} /> Editar
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
       </div>
+      {showMatchModal && <MatchmakingClienteModal cliente={cliente} onClose={() => setShowMatchModal(false)} />}
     </>
   );
 }
@@ -243,6 +276,7 @@ export default function Clientes() {
   const { data, isLoading } = useQuery({
     queryKey: ['clientes', estado],
     queryFn: () => clientesApi.list({ estado: estado || undefined, limit: 100 }),
+    refetchInterval: 15000,
   });
 
   const updateEstado = useMutation({
@@ -273,9 +307,28 @@ export default function Clientes() {
         <div className="page-header-actions">
           <button className={`filter-chip${view === 'lista' ? ' active' : ''}`} onClick={() => setView('lista')}>Lista</button>
           <button className={`filter-chip${view === 'pipeline' ? ' active' : ''}`} onClick={() => setView('pipeline')}>Pipeline</button>
-          <button className="btn btn-primary"><Plus size={16} />Nuevo Lead</button>
+          <button className="btn btn-primary" onClick={() => setSelected({ id: 'nueva', nombre: '', apellidos: '', tipo: 'COMPRADOR', estado: 'NUEVO' })}><Plus size={16} />Nuevo Lead</button>
         </div>
       </div>
+
+      {pipeline['NUEVO']?.length > 0 && (
+        <div style={{ background: '#FEF2F2', border: '1px solid #F87171', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontWeight: 600, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>🔔</span> 
+            Tienes {pipeline['NUEVO'].length} nuevo{pipeline['NUEVO'].length > 1 ? 's' : ''} lead{pipeline['NUEVO'].length > 1 ? 's' : ''} sin atender
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {pipeline['NUEVO'].map(lead => (
+               <div key={lead.id} onClick={() => setSelected(lead)} style={{ cursor: 'pointer', background: 'white', border: '1px solid #FECACA', borderRadius: 6, padding: '6px 12px', fontSize: '0.8rem', color: '#991B1B', display: 'flex', alignItems: 'center', gap: 6 }}>
+                 <strong>{lead.nombre} {lead.apellidos || ''}</strong> 
+                 <span style={{opacity: 0.8}}>por</span> 
+                 <strong style={{textDecoration: 'underline'}}>{lead.origen || 'Desconocido'}</strong>
+                 <ChevronRight size={12} style={{ opacity: 0.5 }} />
+               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="filters-bar" style={{ marginBottom: '1.5rem' }}>
         <div className="search-input-wrap">

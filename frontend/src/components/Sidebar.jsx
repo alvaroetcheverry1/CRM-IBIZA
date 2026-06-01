@@ -1,8 +1,10 @@
 import { NavLink } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { clientesApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Palmtree, Home, Building2, Users, UserCheck,
-  FileText, Settings, LogOut, Bot, MessageCircle, CalendarDays, Presentation, Globe, Radar, CalendarClock, Scale
+  FileText, Settings, LogOut, Bot, MessageCircle, CalendarDays, Presentation, Globe, Radar, CalendarClock, Scale, KanbanSquare, Database
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -12,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/vacacional/calendario', icon: CalendarDays, label: 'Calendario Disponibilidad' },
   { to: '/larga-duracion', icon: Home, label: 'Alquiler L/D' },
   { to: '/venta', icon: Building2, label: 'Venta' },
+  { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline Ventas' },
   { to: '/propiedades', icon: Building2, label: 'Todas las Propiedades' },
   { section: 'Personas' },
   { to: '/propietarios', icon: UserCheck, label: 'Propietarios' },
@@ -24,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/agente-legal', icon: Scale, label: 'AI Closer (Legal)' },
   { section: 'Gestión' },
   { to: '/documentos', icon: FileText, label: 'Documentos & IA' },
+  { to: '/migracion', icon: Database, label: 'Migration Wizard' },
   { to: '/facturacion', icon: FileText, label: 'Facturación' },
   { to: '/propuestas', icon: Presentation, label: 'Generador Propuestas' },
 ];
@@ -34,6 +38,15 @@ function initials(name, lastname) {
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+
+  const { data: newLeadsData } = useQuery({
+    queryKey: ['clientes', 'NUEVO_SIDEBAR'],
+    queryFn: () => clientesApi.list({ estado: 'NUEVO', limit: 1 }),
+    refetchInterval: 5 * 60 * 1000, // 5 minutos (antes 15s → llenaba los logs)
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const newLeadsCount = newLeadsData?.meta?.total || 0;
 
   return (
     <aside className="sidebar">
@@ -57,6 +70,11 @@ export default function Sidebar() {
             >
               <Icon className="nav-icon" size={18} />
               {item.label}
+              {item.to === '/clientes' && newLeadsCount > 0 && (
+                <span style={{ marginLeft: 'auto', background: '#EF4444', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: 10 }}>
+                  {newLeadsCount}
+                </span>
+              )}
             </NavLink>
           );
         })}

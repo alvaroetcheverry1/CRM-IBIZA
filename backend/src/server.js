@@ -19,12 +19,28 @@ const facturasRoutes = require('./routes/facturas');
 const matchmakingRoutes = require('./routes/matchmaking');
 const icalRoutes = require('./routes/ical');
 const whatsappRoutes = require('./routes/whatsapp');
+const actividadesRoutes = require('./routes/actividades');
+const migracionRoutes = require('./routes/migracion');
+const portalesRoutes = require('./routes/portales');
+const scraperRoutes = require('./routes/scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Seguridad ─────────────────────────────────────────────
-app.use(helmet());
+// Helmet con Cross-Origin-Resource-Policy relajado para /api/uploads
+// (sin esto, las imágenes locales no se pueden mostrar en el frontend)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/uploads')) {
+    // Permitir que el frontend cargue estas imágenes
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  next();
+});
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(compression());
 
 const limiter = rateLimit({
@@ -37,6 +53,7 @@ app.use('/api/', limiter);
 // ─── CORS ──────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://localhost:5174',   // Puerto alternativo Vite
   'http://localhost:8080',   // Agente de captación de leads
   'http://localhost:3001',   // Posible segundo frontend
   'https://ibizaluxurydreams.com',
@@ -64,7 +81,13 @@ app.use((req, res, next) => {
 });
 
 // ─── Archivos Estáticos (Fallback Local) ─────────────────
-app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
+// Servir las imágenes subidas localmente con cabeceras CORS correctas
+app.use('/api/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  next();
+}, express.static(path.join(__dirname, '../public/uploads')));
 
 // ─── Rutas ─────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -79,6 +102,10 @@ app.use('/api/facturas', facturasRoutes);
 app.use('/api/matchmaking', matchmakingRoutes);
 app.use('/api/ical', icalRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/actividades', actividadesRoutes);
+app.use('/api/migracion', migracionRoutes);
+app.use('/api/portales', portalesRoutes);
+app.use('/api/scraper', scraperRoutes);
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/health', (req, res) => {

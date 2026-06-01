@@ -55,7 +55,8 @@ router.post('/', authenticate, [
     const cliente = await prisma.cliente.create({ data: req.body });
     res.status(201).json(cliente);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error creando lead:', err);
+    res.status(500).json({ error: err.message || 'Error desconocido' });
   }
 });
 

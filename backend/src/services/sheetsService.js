@@ -58,6 +58,17 @@ class SheetsService {
     ];
 
     const urlDossier = propiedad.documentos?.find(d => d.tipo === 'DOSSIER')?.urlDrive || '';
+    
+    let caracteristicasExtendidas = propiedad.caracteristicas || '';
+    const extra = [];
+    if (propiedad.garaje) extra.push('Garaje');
+    if (propiedad.terraza) extra.push('Terraza');
+    if (propiedad.jardin) extra.push('Jardín');
+    if (propiedad.vistasMar) extra.push('Vistas al Mar');
+    if (propiedad.ascensor) extra.push('Ascensor');
+    if (extra.length > 0) {
+      caracteristicasExtendidas += (caracteristicasExtendidas ? ', ' : '') + extra.join(', ');
+    }
 
     if (propiedad.tipo === 'VACACIONAL') {
       const av = propiedad.alquilerVacacional || {};
@@ -67,7 +78,7 @@ class SheetsService {
         av.precioTemporadaMedia || '',
         av.precioTemporadaBaja || '',
         av.licenciaETV || '',
-        propiedad.caracteristicas || '',
+        caracteristicasExtendidas,
         propiedad.estado,
         propiedad.urlDriveCarpeta || '',
         propiedad.descripcion || '',
@@ -85,7 +96,7 @@ class SheetsService {
         v.estadoHipotecario || '',
         v.comisionAgencia || '',
         v.etapaPipeline || '',
-        propiedad.caracteristicas || '',
+        caracteristicasExtendidas,
         propiedad.estado,
         propiedad.urlDriveCarpeta || '',
         fecha,

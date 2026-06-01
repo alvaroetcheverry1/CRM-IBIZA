@@ -10,11 +10,14 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   fileFilter: (req, file, cb) => {
-    const allowed = ['application/pdf', 'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Tipo de archivo no permitido'), false);
+    const isImage = file.mimetype.startsWith('image/') || file.originalname.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif|heic|heif)$/);
+    const isPDF = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    const isDoc = file.mimetype.startsWith('application/vnd') || file.originalname.toLowerCase().match(/\.(doc|docx|ppt|pptx|xls|xlsx)$/);
+    if (isImage || isPDF || isDoc || file.mimetype === 'text/plain' || file.originalname.toLowerCase().endsWith('.txt')) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Tipo de archivo no permitido. Recibido: ${file.mimetype} - ${file.originalname}`), false);
+    }
   },
 });
 
@@ -44,9 +47,11 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
   if (!req.file) return res.status(400).json({ error: 'No se ha enviado ningún archivo' });
 
   const { propiedadId, propietarioId, clienteId, tipo } = req.body;
+  const fs = require('fs');
+  const path = require('path');
 
   try {
-    // 1. Crear registro en BD
+    // 1. Crear registro inicial en BD
     const documento = await prisma.documento.create({
       data: {
         nombre: req.file.originalname,
@@ -61,45 +66,64 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
       },
     });
 
-    // 2. Subir a Google Drive (await to ensure it returns populated data)
-    let finalDoc = documento;
+    // 2. Intentar subir a Google Drive; si falla, guardar localmente
+    let finalUrl = null;
+    let finalFileId = null;
+
     try {
       const { url, fileId } = await driveService.subirDocumento(req.file, propiedadId, tipo);
-      finalDoc = await prisma.documento.update({
-        where: { id: documento.id },
-        data: { urlDrive: url, driveFileId: fileId },
-      });
+      finalUrl = url;
+      finalFileId = fileId;
+    } catch (driveErr) {
+      // Drive no disponible (sin credenciales en dev) — guardar localmente
+      const uploadsDir = path.join(__dirname, '../../public/uploads');
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-      // Actualizar fotoPrincipal de la propiedad si aplica
-      if (tipo === 'FOTO' && propiedadId) {
+      // Nombre de archivo único para evitar colisiones
+      const ext = path.extname(req.file.originalname) || '.bin';
+      const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const filePath = path.join(uploadsDir, safeName);
+
+      fs.writeFileSync(filePath, req.file.buffer);
+      // URL pública servida por Express
+      finalUrl = `/api/uploads/${safeName}`;
+      console.log(`[upload] Drive no disponible, guardado localmente: ${finalUrl}`);
+    }
+
+    // 3. Actualizar documento con la URL final
+    const finalDoc = await prisma.documento.update({
+      where: { id: documento.id },
+      data: {
+        urlDrive: finalUrl,
+        driveFileId: finalFileId,
+        estadoProcesamiento: 'COMPLETADO',
+      },
+    });
+
+    // 4. Si es FOTO, actualizar campos fotos/fotoPrincipal de la propiedad
+    if (tipo === 'FOTO' && propiedadId && finalUrl) {
+      try {
         const prop = await prisma.propiedad.findUnique({ where: { id: propiedadId } });
         if (prop) {
-          const updates = {};
-          if (!prop.fotoPrincipal) {
-            updates.fotoPrincipal = url;
-          }
-          // Intentar añadir la nueva URL al string de fotos
           let fotosArr = [];
-          try { 
-            fotosArr = JSON.parse(prop.fotos || '[]'); 
-            if (!Array.isArray(fotosArr)) fotosArr = typeof prop.fotos === 'string' && prop.fotos ? prop.fotos.split(',') : [];
-          } catch { 
-            fotosArr = typeof prop.fotos === 'string' && prop.fotos ? prop.fotos.split(',') : []; 
-          }
-          fotosArr.push(url);
-          updates.fotos = JSON.stringify(fotosArr);
+          try { fotosArr = JSON.parse(prop.fotos || '[]'); } catch { fotosArr = []; }
+          if (!Array.isArray(fotosArr)) fotosArr = [];
+          fotosArr.push(finalUrl);
 
           await prisma.propiedad.update({
             where: { id: propiedadId },
-            data: updates
+            data: {
+              fotos: JSON.stringify(fotosArr),
+              fotoPrincipal: prop.fotoPrincipal || finalUrl,
+            },
           });
         }
+      } catch (err) {
+        console.warn('[upload] Error actualizando fotoPrincipal:', err.message);
       }
-    } catch (err) {
-      console.error('Error uploading to drive:', err);
     }
 
-    // 3. Procesar con IA si es PDF (async)
+    // 5. Procesar PDF con IA si aplica (async, no bloquea)
     if (req.file.mimetype === 'application/pdf' && propiedadId) {
       iaService.procesarDocumento(req.file.buffer, propiedadId, documento.id)
         .then(async (datosExtraidos) => {
@@ -114,18 +138,15 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
             data: { estadoProcesamiento: 'ERROR', errorProcesamiento: err.message },
           });
         });
-    } else {
-      await prisma.documento.update({
-        where: { id: documento.id },
-        data: { estadoProcesamiento: 'COMPLETADO' },
-      });
     }
 
     res.status(201).json(finalDoc);
   } catch (err) {
+    console.error('[upload] Error:', err.message);
     res.status(500).json({ error: 'Error al subir documento', detail: err.message });
   }
 });
+
 
 // POST /api/documentos/dossier — Sube un Dossier generado a la carpeta Marketing de la Propiedad en Drive
 router.post('/dossier', authenticate, upload.single('file'), async (req, res) => {

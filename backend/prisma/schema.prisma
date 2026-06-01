@@ -115,6 +115,7 @@ model Propiedad {
   estado            String  @default("DISPONIBLE")
   caracteristicas   String?          // separadas por coma
   descripcion       String?
+  notas             String?
   urlDriveCarpeta   String?
   fotoPrincipal     String?
   fotos             String
@@ -136,6 +137,7 @@ model Propiedad {
   actividades       Actividad[]
   auditLogs         AuditLog[]
   reservasExternas  ReservaExterna[]
+  publicaciones     PublicacionPortal[]
 
   @@index([tipo, estado, zona])
 }
@@ -353,3 +355,21 @@ model ReservaExterna {
   @@unique([uid, propiedadId])
 }
 
+model PublicacionPortal {
+  id              String    @id @default(cuid())
+  propiedadId     String
+  propiedad       Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  portal          String    // idealista | fotocasa | james_edition | kyero
+  estado          String    @default("NO_PUBLICADO") // NO_PUBLICADO | PUBLICANDO | PUBLICADO | ERROR
+  urlPublicacion  String?   // URL de la propiedad en el portal
+  idExterno       String?   // ID que asigna el portal a la propiedad
+  errores         String?   // JSON con errores de sync
+  ultimoSync      DateTime?
+  fechaPublicacion DateTime?
+  creadoEn        DateTime  @default(now())
+  actualizadoEn   DateTime  @updatedAt
+
+  @@unique([propiedadId, portal])
+  @@index([portal, estado])
+}

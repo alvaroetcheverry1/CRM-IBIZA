@@ -15,6 +15,7 @@ const titles = {
   '/propuestas': { title: 'Generador de Propuestas', subtitle: 'Crea presentaciones comerciales para clientes' },
   '/agente-comercial': { title: 'Agente Comercial IA', subtitle: 'Central telefónica outbound autónoma' },
   '/whatsapp': { title: 'Asistente WhatsApp', subtitle: 'Atención al cliente inbound 24/7' },
+  '/migracion': { title: 'Migration Wizard', subtitle: 'Migra catálogos completos desde CSV, Carpetas o Drive' },
 };
 
 export default function Layout() {

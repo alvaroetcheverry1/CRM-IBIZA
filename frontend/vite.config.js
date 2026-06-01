@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['pdfjs-dist'],
+  },
   server: {
     host: true,
     port: 5173,
@@ -10,6 +13,7 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:3000',
         changeOrigin: true,
+        rewrite: (path) => path,
       },
     },
   },

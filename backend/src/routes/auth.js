@@ -9,7 +9,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generar tokens JWT
 const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
   const refreshToken = jwt.sign({ userId }, process.env.JWT_SECRET + '_refresh', { expiresIn: '30d' });
   return { accessToken, refreshToken };
 };

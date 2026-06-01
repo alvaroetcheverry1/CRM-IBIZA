@@ -2,39 +2,82 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { prisma } = require('../utils/prisma');
+const OpenAI = require('openai').default;
 
-// Banco de frases por intención para simular IA (sin clave de OpenAI)
-const RESPUESTAS_IA = {
-  disponibilidad: (props) =>
-    `¡Hola! Soy Sofía, asistente de Ibiza Luxury Dreams 🌴 Permítame consultar nuestra disponibilidad. Actualmente tenemos ${props.length > 0 ? props.slice(0, 2).map(p => `«${p.nombre}» en ${p.zona}`).join(' y ') : 'varias villas disponibles en Ibiza'} que podrían encajar con lo que busca. ¿Me puede indicar las fechas exactas de su estancia?`,
-  precio: (props) =>
-    props.length > 0
-      ? `Por supuesto. Las villas disponibles oscilan entre ${Math.min(...props.map(p => p.alquilerVacacional?.precioTemporadaBaja || 5000)).toLocaleString('es-ES')}€ y ${Math.max(...props.map(p => p.alquilerVacacional?.precioTemporadaAlta || 20000)).toLocaleString('es-ES')}€ por semana según temporada. ¿Le gustaría que le envíe el dossier completo de alguna?`
-      : `Nuestras villas en Ibiza tienen precios adaptados a cada temporada. ¿Le gustaría que le indique los precios para fechas concretas?`,
-  contacto: () =>
-    `Para atenderle personalmente, le recomiendo que me facilite su correo electrónico y le prepararemos una propuesta personalizada en menos de 24 horas. También puede llamarnos directamente. ¿Prefiere que le tengamos localizado por email o por teléfono?`,
-  saludo: () =>
-    `¡Hola! Soy Sofía, la asistente virtual de Ibiza Luxury Dreams ✨ Estoy aquí para ayudarle a encontrar su villa perfecta en Ibiza. ¿Está buscando para alquiler vacacional o le interesa una propiedad de compra?`,
-  default: (props) =>
-    props.length > 0
-      ? `Entendido. Tenemos un portfolio de más de ${props.length} propiedades exclusivas en Ibiza. ¿Qué zona le atrae más? Sant Josep, Talamanca, Jesus, Sant Antoni o Las Salinas son zonas muy solicitadas.`
-      : `Ibiza Luxury Dreams le ofrece una selección exclusiva de propiedades de lujo en Ibiza. ¿Podría contarme más sobre lo que está buscando?`,
-};
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
-function detectarIntencion(mensaje) {
-  const m = mensaje.toLowerCase();
-  if (m.match(/disponib|libre|ocupad|reser|agosto|julio|semana|fecha/)) return 'disponibilidad';
-  if (m.match(/precio|cuest|cuanto|€|euro|presupuest|tarifa|coste/)) return 'precio';
-  if (m.match(/contacto|telefono|email|correo|llamar|hablar|agente|persona/)) return 'contacto';
-  if (m.match(/hola|buenas|hello|buen dia|buenos dias/)) return 'saludo';
-  return 'default';
-}
-
+// Funciones utilitarias
 function detectarEmailYTelefono(mensaje) {
   const email = mensaje.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
   const telefono = mensaje.match(/\+?[\d\s\-/.]{9,15}/)?.[0]?.replace(/\s/g, '');
   return { email, telefono };
 }
+
+async function procesarMensajeConIA(mensaje, propiedades, history = []) {
+  if (!openai) {
+    return "Lo siento, el asistente inteligente está desactivado por falta de configuración (OpenAI Key).";
+  }
+
+  const contextData = propiedades.map(p => 
+    `- ${p.nombre} (${p.zona}): ${p.habitaciones} hab. Temp Alta: ${p.alquilerVacacional?.precioTemporadaAlta}€, Baja: ${p.alquilerVacacional?.precioTemporadaBaja}€`
+  ).join('\n');
+
+  const systemPrompt = `Eres Sofía, asistente inteligente de Ibiza Luxury Dreams.
+Tu objetivo es ayudar a clientes de lujo a encontrar su villa ideal. Responde con elegancia, cordialidad y exclusividad.
+Usa emojis sutiles. NUNCA inventes villas ni des precios falsos.
+Si te piden disponibilidad o opciones, ofréceles basándote en este inventario actual:
+${contextData}
+
+Importante:
+- Si el cliente te pide detalles o quiere avanzar, pídele SIEMPRE su email o teléfono para que un agente humano le contacte.
+- Mantén respuestas relativamente cortas y directas, fáciles de leer en WhatsApp.`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...history,
+    { role: 'user', content: mensaje }
+  ];
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages,
+      temperature: 0.5,
+      max_tokens: 400,
+    });
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error en OpenAI:', error);
+    return "Disculpe, en este momento estamos teniendo un alto volumen de consultas. Por favor, facilíteme su correo electrónico y un asesor le contactará en breve.";
+  }
+}
+
+async function guardarLeadAutomatico(nombre, email, telefono, mensaje) {
+  if (!email && !telefono) return null;
+  
+  const existe = await prisma.cliente.findFirst({
+    where: { OR: [email ? { email } : {}, telefono ? { telefono } : {}] },
+  });
+
+  if (existe) return existe;
+
+  return await prisma.cliente.create({
+    data: {
+      nombre: nombre || 'Lead WhatsApp',
+      apellidos: '',
+      email: email || null,
+      telefono: telefono || null,
+      tipo: 'INQUILINO',
+      estado: 'NUEVO',
+      notas: `Lead capturado automáticamente desde WhatsApp Bot.\n${mensaje ? `Mensaje: "${mensaje}"` : ''}`,
+      activo: true,
+    },
+  });
+}
+
+// ---------------------------------------------------------
+// RUTAS PARA EL SIMULADOR DEL FRONTEND (Local)
+// ---------------------------------------------------------
 
 // POST /api/whatsapp/message — Respuesta IA con contexto del CRM
 router.post('/message', authenticate, async (req, res) => {
@@ -42,27 +85,18 @@ router.post('/message', authenticate, async (req, res) => {
     const { message, conversationHistory = [] } = req.body;
     if (!message) return res.status(400).json({ error: 'message requerido' });
 
-    // Obtener propiedades vacacionales disponibles para dar contexto a la IA
     const propiedades = await prisma.propiedad.findMany({
       where: { tipo: 'VACACIONAL', estado: 'DISPONIBLE', activo: true },
       include: { alquilerVacacional: { select: { precioTemporadaAlta: true, precioTemporadaBaja: true } } },
-      select: {
-        id: true, nombre: true, zona: true, habitaciones: true,
-        alquilerVacacional: true,
-      },
       take: 10,
     });
 
-    const intencion = detectarIntencion(message);
-    const generarRespuesta = RESPUESTAS_IA[intencion] || RESPUESTAS_IA.default;
-    const respuesta = generarRespuesta(propiedades);
-
-    // Detectar datos de contacto para auto-crear lead
+    const respuesta = await procesarMensajeConIA(message, propiedades, conversationHistory);
     const { email, telefono } = detectarEmailYTelefono(message);
 
     res.json({
       respuesta,
-      intencion,
+      intencion: 'generado-ia',
       datosDetectados: { email, telefono },
       tieneContacto: !!(email || telefono),
     });
@@ -75,37 +109,15 @@ router.post('/message', authenticate, async (req, res) => {
 router.post('/guardar-lead', authenticate, async (req, res) => {
   try {
     const { nombre, email, telefono, mensaje } = req.body;
-    if (!email && !telefono) return res.status(400).json({ error: 'Email o teléfono requerido' });
-
-    // Evitar duplicados
-    const existe = await prisma.cliente.findFirst({
-      where: { OR: [email ? { email } : {}, telefono ? { telefono } : {}] },
-    });
-
-    if (existe) {
-      return res.json({ ok: true, lead: existe, nuevo: false, mensaje: 'Lead ya existente actualizado' });
-    }
-
-    const lead = await prisma.cliente.create({
-      data: {
-        nombre: nombre || 'Lead WhatsApp',
-        apellidos: '',
-        email: email || null,
-        telefono: telefono || null,
-        tipo: 'INQUILINO',
-        estado: 'NUEVO',
-        notas: `Lead capturado automáticamente desde WhatsApp Bot.\n${mensaje ? `Mensaje: "${mensaje}"` : ''}`,
-        activo: true,
-      },
-    });
-
-    res.json({ ok: true, lead, nuevo: true, mensaje: 'Lead creado automáticamente desde WhatsApp' });
+    const lead = await guardarLeadAutomatico(nombre, email, telefono, mensaje);
+    if (!lead) return res.status(400).json({ error: 'Faltan datos de contacto' });
+    res.json({ ok: true, lead, nuevo: true, mensaje: 'Lead procesado' });
   } catch (err) {
     res.status(500).json({ error: 'Error guardando lead', detail: err.message });
   }
 });
 
-// GET /api/whatsapp/leads-recientes — Leads capturados recientemente desde WhatsApp
+// GET /api/whatsapp/leads-recientes
 router.get('/leads-recientes', authenticate, async (req, res) => {
   try {
     const leads = await prisma.cliente.findMany({
@@ -116,6 +128,92 @@ router.get('/leads-recientes', authenticate, async (req, res) => {
     res.json(leads);
   } catch (err) {
     res.status(500).json({ error: 'Error obteniendo leads', detail: err.message });
+  }
+});
+
+// ---------------------------------------------------------
+// RUTAS PARA META GRAPH API (WEBHOOK REAL)
+// ---------------------------------------------------------
+
+// GET /api/whatsapp/webhook — Verificación de Meta
+router.get('/webhook', (req, res) => {
+  const verify_token = process.env.WHATSAPP_VERIFY_TOKEN;
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token) {
+    if (mode === 'subscribe' && token === verify_token) {
+      console.log('WEBHOOK_VERIFIED');
+      res.status(200).send(challenge);
+    } else {
+      res.sendStatus(403);
+    }
+  } else {
+    res.sendStatus(400);
+  }
+});
+
+// POST /api/whatsapp/webhook — Recepción de Mensajes de Meta
+router.post('/webhook', async (req, res) => {
+  const body = req.body;
+
+  if (body.object) {
+    if (body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages && body.entry[0].changes[0].value.messages[0]) {
+      const waId = body.entry[0].changes[0].value.contacts[0].wa_id;
+      const contactName = body.entry[0].changes[0].value.contacts[0].profile.name;
+      const messageObj = body.entry[0].changes[0].value.messages[0];
+      
+      // Responder a Facebook inmediatamente (Requerido 200 OK)
+      res.sendStatus(200);
+
+      if (messageObj.type === 'text') {
+        const messageText = messageObj.text.body;
+        console.log(`Mensaje recibido de ${contactName} (${waId}): ${messageText}`);
+
+        try {
+          const propiedades = await prisma.propiedad.findMany({
+            where: { tipo: 'VACACIONAL', estado: 'DISPONIBLE', activo: true },
+            include: { alquilerVacacional: { select: { precioTemporadaAlta: true, precioTemporadaBaja: true } } },
+            take: 10,
+          });
+
+          // Historia vacía en webhook temporal (en prod, habría que cargarla de DB)
+          const respuesta = await procesarMensajeConIA(messageText, propiedades, []);
+
+          // Enviar respuesta vía Meta API
+          if (process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID) {
+            const fetch = require('node-fetch');
+            await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                messaging_product: "whatsapp",
+                to: waId,
+                type: "text",
+                text: { body: respuesta }
+              })
+            });
+          } else {
+            console.warn('WHATSAPP_TOKEN o WHATSAPP_PHONE_ID no configurados. No se envió respuesta real.');
+          }
+
+          // Guardar lead
+          const { email, telefono } = detectarEmailYTelefono(messageText);
+          await guardarLeadAutomatico(contactName, email, telefono || waId, messageText);
+
+        } catch (error) {
+          console.error('Error procesando webhook interno:', error);
+        }
+      }
+    } else {
+      res.sendStatus(200);
+    }
+  } else {
+    res.sendStatus(404);
   }
 });
 

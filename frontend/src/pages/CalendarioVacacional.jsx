@@ -72,6 +72,20 @@ function getMockReservas(propId, year, month, syncInfo = {}) {
     }
   }
 
+  // Si está sincronizado manual (Idealista), inyectar reservas
+  if (syncInfo.manual) {
+    let md = (seed % 8) + 10;
+    if (md <= days) {
+      if (!reservas.some(r => r.inicio <= md && r.fin >= md)) {
+        const len = (md % 5) + 2;
+        const end = Math.min(md + len - 1, days);
+        if (!reservas.some(r => r.inicio <= end && r.fin >= md)) {
+           reservas.push({ inicio: md, fin: end, huespedes: 4, nombre: 'Idealista Guest', origen: 'MANUAL' });
+        }
+      }
+    }
+  }
+
   return reservas;
 }
 
@@ -130,6 +144,7 @@ function MiniCalendario({ propiedad, year, month, syncInfo = {} }) {
           if (status === 'RESERVADO') {
             if (origen === 'AIRBNB') { bg = '#FFE4E6'; color = '#E11D48'; }
             else if (origen === 'BOOKING') { bg = '#DBEAFE'; color = '#1D4ED8'; }
+            else if (origen === 'MANUAL') { bg = '#F3E8FF'; color = '#7E22CE'; }
             else { bg = '#FEE2E2'; color = '#DC2626'; }
           }
 
@@ -162,6 +177,9 @@ function MiniCalendario({ propiedad, year, month, syncInfo = {} }) {
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', color: '#1D4ED8' }}>
           <div style={{ width: 8, height: 8, background: '#DBEAFE', border: '1px solid #93C5FD', borderRadius: 2 }} /> Booking
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', color: '#7E22CE' }}>
+          <div style={{ width: 8, height: 8, background: '#F3E8FF', border: '1px solid #D8B4FE', borderRadius: 2 }} /> Otra / Idealista
         </span>
       </div>
     </div>
@@ -267,19 +285,20 @@ function EnviarOpcionesModal({ opciones, fechas, onClose }) {
 function SyncModal({ propiedad, onClose, onSyncSuccess }) {
   const [urlAirbnb, setUrlAirbnb] = useState('');
   const [urlBooking, setUrlBooking] = useState('');
+  const [urlManual, setUrlManual] = useState('');
   const [syncing, setSyncing] = useState(false);
 
   const handleSync = async (e) => {
     e.preventDefault();
-    if (!urlAirbnb && !urlBooking) {
+    if (!urlAirbnb && !urlBooking && !urlManual) {
       toast.error('Introduce al menos una URL de iCal para sincronizar.');
       return;
     }
     setSyncing(true);
     try {
-      const result = await icalApi.sync({ propiedadId: propiedad.id, urlAirbnb: urlAirbnb || null, urlBooking: urlBooking || null });
-      toast.success(`${result.totalImportados} eventos importados correctamente.`);
-      onSyncSuccess({ airbnb: !!urlAirbnb, booking: !!urlBooking, syncedAt: new Date() });
+      const result = await icalApi.sync({ propiedadId: propiedad.id, urlAirbnb: urlAirbnb || null, urlBooking: urlBooking || null, urlManual: urlManual || null });
+      toast.success(`${result.totalImportados || 0} eventos importados correctamente.`);
+      onSyncSuccess({ airbnb: !!urlAirbnb, booking: !!urlBooking, manual: !!urlManual, syncedAt: new Date() });
     } catch (err) {
       // Si la URL iCal es de Airbnb y el CORS bloquea, informamos al usuario
       toast.error('No se pudo conectar con la URL iCal. Asegúrate de que la URL sea pública y termine en .ics');
@@ -324,6 +343,18 @@ function SyncModal({ propiedad, onClose, onSyncSuccess }) {
               placeholder="https://admin.booking.com/hotel/hoteladmin/ical..." 
               value={urlBooking}
               onChange={e => setUrlBooking(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#059669', fontWeight: 700 }}>Idealista / Otra</span> iCal URL
+            </label>
+            <input 
+              className="form-input" 
+              placeholder="https://www.idealista.com/calendar/ical/..." 
+              value={urlManual}
+              onChange={e => setUrlManual(e.target.value)}
             />
           </div>
 

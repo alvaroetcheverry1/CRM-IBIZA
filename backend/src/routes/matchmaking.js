@@ -117,6 +117,46 @@ router.get('/:propiedadId', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/matchmaking/cliente/:clienteId
+router.get('/cliente/:clienteId', authenticate, async (req, res) => {
+  try {
+    const { clienteId } = req.params;
+
+    const cliente = await prisma.cliente.findUnique({
+      where: { id: clienteId },
+    });
+
+    if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    let tiposPropiedad = [];
+    if (cliente.tipo === 'COMPRADOR') tiposPropiedad = ['VENTA'];
+    else if (cliente.tipo === 'INQUILINO') tiposPropiedad = ['VACACIONAL', 'LARGA_DURACION'];
+    else tiposPropiedad = ['VENTA', 'VACACIONAL', 'LARGA_DURACION'];
+
+    const propiedades = await prisma.propiedad.findMany({
+      // Considerar todas las NO vendidas ni alquiladas fuertemente, 
+      // pero por ahora filtramos los estados definitivos:
+      where: { activo: true, tipo: { in: tiposPropiedad }, estado: { notIn: ['VENDIDA', 'ALQUILADA'] } },
+      include: {
+        venta: true,
+        alquilerVacacional: true,
+        alquilerLargaDuracion: true,
+      },
+      take: 200,
+    });
+
+    const matches = propiedades
+      .map(p => ({ ...p, score: calcScore(cliente, p), explicacion: buildExplicacion(cliente, p, calcScore(cliente, p)) }))
+      .filter(p => p.score >= 40)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
+
+    res.json({ matches, cliente: { nombre: cliente.nombre, apellidos: cliente.apellidos, tipo: cliente.tipo, presupuesto: cliente.presupuesto } });
+  } catch (err) {
+    res.status(500).json({ error: 'Error en matchmaking inverso', detail: err.message });
+  }
+});
+
 // POST /api/matchmaking/enviar-dossier
 router.post('/enviar-dossier', authenticate, async (req, res) => {
   try {

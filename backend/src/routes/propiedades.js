@@ -13,23 +13,55 @@ const uploadPDF = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Solo se aceptan PDFs e imágenes'), false);
+    const isImage = file.mimetype.startsWith('image/') || file.originalname.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/);
+    const isPDF = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    if (isPDF || isImage) cb(null, true);
+    else cb(new Error('Solo se aceptan PDFs e imágenes. Archivo recibido: ' + file.originalname), false);
   },
 });
 
 // ─── POST /api/propiedades/analizar-pdf ─────────────────────
-// Analiza un PDF y devuelve datos estructurados sin crear nada en DB
+// Analiza un PDF con IA y opcionalmente analiza imágenes embebidas con Vision
 router.post('/analizar-pdf', authenticate, uploadPDF.single('pdf'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No se ha enviado ningún archivo PDF' });
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se ha enviado ningún archivo PDF' });
+  }
 
   try {
-    const datos = await iaService.analizarPDFCompleto(req.file.buffer, req.file.originalname);
-    res.json({ ok: true, datos });
+    const { datos, fotosUrls } = await iaService.analizarPDFCompleto(
+      req.file.buffer,
+      req.file.originalname
+    );
+    res.json({ ok: true, datos, fotosUrls });
   } catch (err) {
+    console.error('[ERROR] analizar-pdf:', err.message);
     res.status(500).json({ error: 'Error al analizar el PDF', detail: err.message });
   }
+});// ─── POST /api/propiedades/analizar-imagenes ────────────────
+// Analiza imágenes sueltas usando Vision para extraer características adicionales
+router.post('/analizar-imagenes', authenticate, uploadPDF.array('fotos', 6), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No se han enviado archivos de imagen' });
+  }
+
+  let datosContexto = {};
+  try {
+    if (req.body.datosContexto) {
+      datosContexto = JSON.parse(req.body.datosContexto);
+    }
+  } catch (e) {
+    console.warn('[analizar-imagenes] Error parseando datosContexto:', e.message);
+  }
+
+  try {
+    const datosExtraidos = await iaService.analizarImagenesDirectas(req.files, datosContexto);
+    res.json({ ok: true, datos: datosExtraidos });
+  } catch (err) {
+    console.error('[ERROR] analizar-imagenes:', err.message);
+    res.status(500).json({ error: 'Error al analizar las imágenes', detail: err.message });
+  }
 });
+
 
 
 // Helper de errores de validación
@@ -148,7 +180,17 @@ router.post('/', authenticate, requireRole('AGENTE', 'AGENTE_SENIOR', 'BACKOFFIC
   if (handleValidation(req, res)) return;
 
   try {
-    const { alquilerVacacional, alquilerLargaDuracion, venta, ...propiedadData } = req.body;
+    // Limpiar campos que no son del schema de Prisma (pueden venir del frontend/IA)
+    const {
+      alquilerVacacional, alquilerLargaDuracion, venta,
+      fotosExtraidas,  // ignorar — las fotos se suben como Documentos desde el frontend
+      _mock,           // campo interno de IA en modo mock
+      precioVenta: _pv, precioAlquilerTemporadaAlta: _pata,
+      precioAlquilerTemporadaMedia: _patm, precioAlquilerTemporadaBaja: _patb,
+      rentaMensual: _rm, licenciaETV: _etv,
+      propietarioNombre: _pn, propietarioTelefono: _pt, propietarioEmail: _pe,
+      ...propiedadData
+    } = req.body;
 
     const referencia = await generarReferencia(propiedadData.tipo);
 
@@ -157,7 +199,7 @@ router.post('/', authenticate, requireRole('AGENTE', 'AGENTE_SENIOR', 'BACKOFFIC
         ...propiedadData,
         referencia,
         agenteId: req.user.id,
-        fotos: '[]',
+        fotos: '[]',           // campo requerido en schema — se actualiza con documentos tipo FOTO
         alquilerVacacional: alquilerVacacional ? { create: alquilerVacacional } : undefined,
         alquilerLargaDuracion: alquilerLargaDuracion ? { create: alquilerLargaDuracion } : undefined,
         venta: venta ? { create: venta } : undefined,
@@ -182,6 +224,7 @@ router.post('/', authenticate, requireRole('AGENTE', 'AGENTE_SENIOR', 'BACKOFFIC
 
     res.status(201).json(propiedad);
   } catch (err) {
+    console.error('[ERROR] crear propiedad:', err.message);
     res.status(500).json({ error: 'Error al crear propiedad', detail: err.message });
   }
 });
@@ -219,6 +262,45 @@ router.put('/:id', authenticate, async (req, res) => {
     res.json(propiedad);
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar propiedad', detail: err.message });
+  }
+});
+
+// ─── PATCH /api/propiedades/:id/pipeline ────────────────────
+// Actualiza solo la etapa del pipeline de ventas (Kanban drag-and-drop)
+router.patch('/:id/pipeline', authenticate, async (req, res) => {
+  const ETAPAS_VALIDAS = ['CAPTACION', 'VALORACION', 'VISITAS', 'OFERTA', 'ARRAS', 'ESCRITURA', 'CERRADO'];
+  const { etapaPipeline } = req.body;
+
+  if (!etapaPipeline || !ETAPAS_VALIDAS.includes(etapaPipeline)) {
+    return res.status(400).json({ error: 'Etapa inválida', validas: ETAPAS_VALIDAS });
+  }
+
+  try {
+    const propiedad = await prisma.propiedad.findFirst({
+      where: { id: req.params.id, activo: true, tipo: 'VENTA' },
+      include: { venta: true },
+    });
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad de venta no encontrada' });
+
+    // Si cambia a CERRADO, actualizar también estado de propiedad
+    const nuevoEstado = etapaPipeline === 'CERRADO' ? 'VENDIDA' : propiedad.estado;
+
+    await prisma.$transaction([
+      prisma.venta.update({
+        where: { propiedadId: req.params.id },
+        data: { etapaPipeline },
+      }),
+      prisma.propiedad.update({
+        where: { id: req.params.id },
+        data: { estado: nuevoEstado },
+      }),
+    ]);
+
+    await auditLog(req.user.id, 'UPDATE', 'Pipeline', req.params.id, propiedad.venta?.etapaPipeline, etapaPipeline);
+
+    res.json({ ok: true, etapaPipeline, estado: nuevoEstado });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar pipeline', detail: err.message });
   }
 });
 

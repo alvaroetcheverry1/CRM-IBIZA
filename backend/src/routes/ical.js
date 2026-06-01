@@ -6,7 +6,7 @@ const { prisma } = require('../utils/prisma');
 // POST /api/ical/sync — Sincronizar calendarios externos (Airbnb, Booking)
 router.post('/sync', authenticate, async (req, res) => {
   try {
-    const { propiedadId, urlAirbnb, urlBooking } = req.body;
+    const { propiedadId, urlAirbnb, urlBooking, urlManual } = req.body;
     if (!propiedadId) return res.status(400).json({ error: 'propiedadId requerido' });
 
     let totalImportados = 0;
@@ -14,6 +14,7 @@ router.post('/sync', authenticate, async (req, res) => {
     const origenes = [];
     if (urlAirbnb) origenes.push({ url: urlAirbnb, origen: 'AIRBNB' });
     if (urlBooking) origenes.push({ url: urlBooking, origen: 'BOOKING' });
+    if (urlManual) origenes.push({ url: urlManual, origen: 'MANUAL' });
 
     if (origenes.length === 0) {
       return res.status(400).json({ error: 'Introduce al menos una URL de iCal' });
@@ -30,7 +31,7 @@ router.post('/sync', authenticate, async (req, res) => {
         let icalData;
 
         // Primero intentamos fetch directo
-        const fetch = require('node-fetch');
+        // Uso de fetch nativo (Node 20+)
         const response = await fetch(url, { timeout: 10000 });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const text = await response.text();

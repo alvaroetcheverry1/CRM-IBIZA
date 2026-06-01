@@ -63,9 +63,9 @@ export const authApi = {
 
 // ─── Dashboard ────────────────────────────────────────────
 export const dashboardApi = {
-  getStats: async () => {
+  getStats: async (meses = 12) => {
     try {
-      return await apiCall('/dashboard');
+      return await apiCall(`/dashboard?meses=${meses}`);
     } catch {
       await delay();
       return MOCK_DATA.dashboard;
@@ -149,64 +149,42 @@ export const propietariosApi = {
   },
 };
 
-// ─── Clientes ─────────────────────────────────────────────
-const LEADS_API_URL = 'http://localhost:3001/api';
-
 export const clientesApi = {
   list: async (params = {}) => {
     try {
-      const cleanParams = Object.fromEntries(Object.entries(params).filter(([_, v]) => v != null));
-      const qs = new URLSearchParams(cleanParams).toString();
-      const res = await fetch(`${LEADS_API_URL}/clientes?${qs}`);
-      if (res.ok) return await res.json();
-    } catch (e) { console.error('Error fetching leads:', e); }
-
-    await delay();
-    let data = [...MOCK_DATA.clientes];
-    if (params.estado) data = data.filter(c => c.estado === params.estado);
-    if (params.tipo) data = data.filter(c => c.tipo === params.tipo);
-    return { data, meta: { total: data.length } };
+      const qs = new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
+      ).toString();
+      return await apiCall(`/clientes${qs ? '?' + qs : ''}`);
+    } catch (err) {
+      console.warn('Clientes API error, usando mock:', err.message);
+      await delay();
+      let data = [...MOCK_DATA.clientes];
+      if (params.estado) data = data.filter(c => c.estado === params.estado);
+      if (params.tipo) data = data.filter(c => c.tipo === params.tipo);
+      return { data, meta: { total: data.length } };
+    }
   },
   get: async (id) => {
     try {
-      const res = await fetch(`${LEADS_API_URL}/clientes/${id}`);
-      if (res.ok) return await res.json();
-    } catch {}
-    await delay(); return MOCK_DATA.clientes.find(c => c.id === id);
+      return await apiCall(`/clientes/${id}`);
+    } catch {
+      await delay();
+      return MOCK_DATA.clientes.find(c => c.id === id);
+    }
   },
   create: async (data) => {
-    const res = await fetch(`${LEADS_API_URL}/clientes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
+    return await apiCall('/clientes', { method: 'POST', body: JSON.stringify(data) });
   },
   update: async (id, data) => {
-    const res = await fetch(`${LEADS_API_URL}/clientes/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
+    return await apiCall(`/clientes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
   delete: async (id) => {
-    const res = await fetch(`${LEADS_API_URL}/clientes/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
+    return await apiCall(`/clientes/${id}`, { method: 'DELETE' });
   },
-  addActividad: async (id, data) => { await delay(); return { id: String(Date.now()), ...data, clienteId: id }; },
+  addActividad: async (id, data) => {
+    return await apiCall(`/clientes/${id}/actividades`, { method: 'POST', body: JSON.stringify(data) });
+  },
 };
 
 // ─── Documentos ───────────────────────────────────────────
@@ -303,12 +281,34 @@ export const facturasApi = {
 
 export const matchmakingApi = {
   getMatches: (propiedadId) => apiCall(`/matchmaking/${propiedadId}`),
+  getMatchesForCliente: (clienteId) => apiCall(`/matchmaking/cliente/${clienteId}`),
   enviarDossier: (data) => apiCall('/matchmaking/enviar-dossier', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const icalApi = {
   sync: (data) => apiCall('/ical/sync', { method: 'POST', body: JSON.stringify(data) }),
   getReservas: (propiedadId) => apiCall(`/ical/${propiedadId}`),
+};
+
+// ─── Actividades / Historial ──────────────────────────────────
+export const actividadesApi = {
+  list: async (params = {}) => {
+    try {
+      const qs = new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
+      ).toString();
+      return await apiCall(`/actividades${qs ? '?' + qs : ''}`);
+    } catch (err) {
+      console.warn('Actividades API error:', err.message);
+      return { data: [] };
+    }
+  },
+  create: async (data) => {
+    return await apiCall('/actividades', { method: 'POST', body: JSON.stringify(data) });
+  },
+  delete: async (id) => {
+    return await apiCall(`/actividades/${id}`, { method: 'DELETE' });
+  },
 };
 
 export const whatsappApi = {

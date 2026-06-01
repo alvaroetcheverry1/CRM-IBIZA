@@ -1,0 +1,47 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:3000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:3000...
+* Connected to localhost (::1) port 3000
+> POST /api/propiedades/analizar-pdf HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbW5ocW1rZXcwMDAwNmF0ZTZheXFkazBnIiwiaWF0IjoxNzc2MTA3NzI5fQ.ow76YRnYS7b6JuUAuTiL3S0ZB4Y7AYkFQTeNuurECEw
+> Content-Length: 746
+> Content-Type: multipart/form-data; boundary=------------------------km3mQb6JfyrkhwbgGB3CTm
+> 
+} [746 bytes data]
+* upload completely sent off: 746 bytes
+< HTTP/1.1 200 OK
+< Content-Security-Policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+< Cross-Origin-Opener-Policy: same-origin
+< Cross-Origin-Resource-Policy: same-origin
+< Origin-Agent-Cluster: ?1
+< Referrer-Policy: no-referrer
+< Strict-Transport-Security: max-age=15552000; includeSubDomains
+< X-Content-Type-Options: nosniff
+< X-DNS-Prefetch-Control: off
+< X-Download-Options: noopen
+< X-Frame-Options: SAMEORIGIN
+< X-Permitted-Cross-Domain-Policies: none
+< X-XSS-Protection: 0
+< X-RateLimit-Limit: 500
+< X-RateLimit-Remaining: 499
+< Date: Mon, 13 Apr 2026 19:15:30 GMT
+< X-RateLimit-Reset: 1776108631
+< Vary: Origin, Accept-Encoding
+< Access-Control-Allow-Credentials: true
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 1155
+< ETag: W/"483-JlyyD0c0gKH1obkrEIGNvrA6m+A"
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+{ [1155 bytes data]
+100  1901  100  1155  100   746  29486  19044 --:--:-- --:--:-- --:--:-- 48743
+* Connection #0 to host localhost left intact
+{"ok":true,"datos":{"nombre":"Villa Can Xomeu (Extraída por IA)","tipo":"VACACIONAL","zona":"Sant Josep de sa Talaia","municipio":"Sant Josep","habitaciones":5,"banos":4,"metrosConstruidos":380,"metrosParcela":2500,"piscina":"SI","garaje":true,"terraza":true,"jardin":true,"vistasMar":true,"ascensor":false,"caracteristicas":["Piscina infinity","Vistas panorámicas al mar","Cocina americana equipada","Domótica Crestron","Barbacoa exterior"],"descripcion":"Excepcional villa de diseño contemporáneo situada en la privilegiada zona de Sant Josep, con impresionantes vistas al mar y atardecer. Distribuida en dos plantas con amplios espacios interiores y exteriores cuidadosamente diseñados para el disfrute del lujo y la privacidad.","precioVenta":null,"precioAlquilerTemporadaAlta":18500,"precioAlquilerTemporadaMedia":12000,"precioAlquilerTemporadaBaja":7500,"rentaMensual":null,"licenciaETV":"ETV-0123-IB","propietarioNombre":"Carlos Martínez López","propietarioTelefono":"+34 626 123 456","propietarioEmail":"carlos.martinez@email.com","notas":"Propiedad recién reformada en 2023. Cliente prefiere alquiler de mínimo 7 noches.","_mock":true}}

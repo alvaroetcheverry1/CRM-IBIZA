@@ -224,63 +224,58 @@ class DriveService {
    * Sube un archivo a Drive en la carpeta correspondiente a la propiedad
    */
   async subirDocumento(file, propiedadId, tipo) {
+    // SIEMPRE guardamos localamente primero — garante que la imagen se vea en el browser
+    // (Las URLs de Google Drive tienen restricciones CORS que impiden mostrarlas directamente)
+    const localResult = this._guardarLocal(file);
+
+    // Sincronizar a Drive de forma async (no bloquea, no afecta al usuario)
     try {
       const drive = await this.getClient();
-      if (!drive) {
-        logger.info(`Drive (mock offline): guardando documento localmente ${file.originalname}`);
-        const fs = require('fs');
-        const path = require('path');
-        const uploadsDir = path.join(__dirname, '../../public/uploads');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        
-        const safeName = Date.now() + '_' + file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
-        const filePath = path.join(uploadsDir, safeName);
-        
-        if (file.buffer) {
-          fs.writeFileSync(filePath, file.buffer);
-        } else {
-          fs.writeFileSync(filePath, 'Mock file content');
-        }
-
-        return {
-          url: `/api/uploads/${safeName}`,
-          fileId: `local_${safeName}`,
-        };
-      }
-
-      const { Readable } = require('stream');
-      const stream = Readable.from(file.buffer);
-
-      const response = await drive.files.create({
-        requestBody: {
-          name: file.originalname,
-          mimeType: file.mimetype,
-        },
-        media: { mimeType: file.mimetype, body: stream },
-        fields: 'id, webViewLink, webContentLink',
-      });
-
-      let urlToReturn = response.data.webViewLink;
-
-      // Si es imagen, hacemos el archivo de solo lectura público y usamos UC link
-      if (file.mimetype.startsWith('image/')) {
-        await drive.permissions.create({
-          fileId: response.data.id,
-          requestBody: { role: 'reader', type: 'anyone' },
+      if (drive) {
+        const { Readable } = require('stream');
+        const stream = Readable.from(file.buffer);
+        const response = await drive.files.create({
+          requestBody: { name: file.originalname, mimeType: file.mimetype },
+          media: { mimeType: file.mimetype, body: stream },
+          fields: 'id',
         });
-        urlToReturn = `https://drive.google.com/uc?export=view&id=${response.data.id}`;
+        if (file.mimetype.startsWith('image/')) {
+          await drive.permissions.create({
+            fileId: response.data.id,
+            requestBody: { role: 'reader', type: 'anyone' },
+          });
+        }
+        logger.info(`Drive: archivo sincronizado ${file.originalname} (id: ${response.data.id})`);
       }
-
-      return {
-        url: urlToReturn,
-        fileId: response.data.id,
-      };
     } catch (err) {
-      logger.error(`Drive: error subiendo archivo: ${err.message}`);
-      return { url: null, fileId: null };
+      logger.warn(`Drive: sync fallido (no crítico): ${err.message}`);
     }
+
+    return localResult;
+  }
+
+  _guardarLocal(file) {
+    logger.info(`Drive (mock offline): guardando documento localmente ${file.originalname}`);
+    const fs = require('fs');
+    const path = require('path');
+    const uploadsDir = path.join(__dirname, '../../public/uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    const safeName = Date.now() + '_' + file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
+    const filePath = path.join(uploadsDir, safeName);
+    
+    if (file.buffer) {
+      fs.writeFileSync(filePath, file.buffer);
+    } else {
+      fs.writeFileSync(filePath, 'Mock file content');
+    }
+
+    return {
+      url: `/api/uploads/${safeName}`,
+      fileId: `local_${safeName}`,
+    };
   }
 
   async eliminarArchivo(fileId) {
@@ -290,6 +285,63 @@ class DriveService {
       await drive.files.delete({ fileId });
     } catch (err) {
       logger.warn(`Drive: no se pudo eliminar ${fileId}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Lista recursivamente el contenido de una carpeta para identificar propiedades.
+   * Asume que cada subcarpeta de primer nivel es una propiedad.
+   */
+  async listarContenidoRecursivo(rootFolderId) {
+    const drive = await this.getClient();
+    if (!drive) return [];
+
+    try {
+      // 1. Listar todas las subcarpetas (posibles propiedades)
+      const resCarpetas = await drive.files.list({
+        q: `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: 'files(id, name)',
+      });
+
+      const propiedades = [];
+
+      for (const carpeta of resCarpetas.data.files) {
+        // 2. Para cada carpeta, listar sus archivos (dossiers y fotos)
+        const resArchivos = await drive.files.list({
+          q: `'${carpeta.id}' in parents and trashed=false`,
+          fields: 'files(id, name, mimeType, size)',
+        });
+
+        propiedades.push({
+          id: carpeta.id,
+          nombre: carpeta.name,
+          archivos: resArchivos.data.files
+        });
+      }
+
+      return propiedades;
+    } catch (err) {
+      logger.error(`Drive: error en listado recursivo: ${err.message}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Descarga un archivo de Drive y devuelve su buffer
+   */
+  async descargarArchivo(fileId) {
+    const drive = await this.getClient();
+    if (!drive) return null;
+
+    try {
+      const response = await drive.files.get(
+        { fileId, alt: 'media' },
+        { responseType: 'arraybuffer' }
+      );
+      return Buffer.from(response.data);
+    } catch (err) {
+      logger.error(`Drive: error descargando archivo ${fileId}: ${err.message}`);
+      return null;
     }
   }
 }

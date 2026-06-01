@@ -33,8 +33,10 @@
     "openai": "^4.33.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "pdf-export-images": "^1.2.0",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^4.0.379",
+    "tesseract.js": "^7.0.0",
     "uuid": "^9.0.1",
     "winston": "^3.13.0"
   },

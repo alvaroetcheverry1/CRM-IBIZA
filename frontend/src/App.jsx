@@ -20,6 +20,8 @@ import AlquilerLargaDuracion from './pages/AlquilerLargaDuracion';
 import Venta from './pages/Venta';
 import CatalogoPublico from './pages/CatalogoPublico';
 import GeneradorPropuestas from './pages/GeneradorPropuestas';
+import PipelineVentas from './pages/PipelineVentas';
+import MigradorEntidades from './pages/MigradorEntidades';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -50,6 +52,8 @@ function AppRoutes() {
         <Route path="agente-setter" element={<AgenteSetter />} />
         <Route path="agente-legal" element={<AgenteLegal />} />
         <Route path="propuestas" element={<GeneradorPropuestas />} />
+        <Route path="pipeline" element={<PipelineVentas />} />
+        <Route path="migracion" element={<MigradorEntidades />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

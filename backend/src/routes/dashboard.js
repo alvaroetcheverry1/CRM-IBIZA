@@ -55,9 +55,25 @@ router.get('/', authenticate, async (req, res) => {
       _sum: { precioTotal: true },
     });
 
-    // ── NUEVO: Ingresos mensuales últimos 12 meses ──────────────────────────
+    // ── NUEVO: Ingresos mensuales dinámicos (1, 3, 6, 12, 24... meses) ─────
+    let numMeses = 12;
+    if (req.query.meses === 'total') {
+      const primeraReserva = await prisma.reserva.findFirst({
+        orderBy: { fechaEntrada: 'asc' },
+        select: { fechaEntrada: true }
+      });
+      if (primeraReserva) {
+        const diffYears = new Date().getFullYear() - primeraReserva.fechaEntrada.getFullYear();
+        const diffMonths = new Date().getMonth() - primeraReserva.fechaEntrada.getMonth();
+        numMeses = diffYears * 12 + diffMonths + 1;
+        if (numMeses < 12) numMeses = 12; // Mínimo mostrar 12
+      }
+    } else if (req.query.meses) {
+      numMeses = parseInt(req.query.meses, 10) || 12;
+    }
+
     const ingresosMensuales = [];
-    for (let i = 11; i >= 0; i--) {
+    for (let i = numMeses - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(1);
       d.setMonth(d.getMonth() - i);

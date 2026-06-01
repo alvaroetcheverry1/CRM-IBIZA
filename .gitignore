@@ -4,6 +4,9 @@ dist/
 .env.*
 !.env.example
 .gemini/
-public/uploads/
+backend/public/uploads/
+backend/dev.db
+backend/dev.db-journal
+frontend/public/uploads/
 .DS_Store
 *.log
