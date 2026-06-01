@@ -101,11 +101,12 @@ router.get('/me', async (req, res) => {
   });
 });
 
-// POST /api/auth/dev-login — Solo en development: login sin Google
+// POST /api/auth/dev-login — Permitido temporalmente en producción sin Google SSO
 router.post('/dev-login', async (req, res) => {
-  if (process.env.NODE_ENV !== 'development') {
-    return res.status(404).json({ error: 'Not found' });
-  }
+  // Comentado para permitir acceso en producción hasta que se configure Google:
+  // if (process.env.NODE_ENV !== 'development') {
+  //   return res.status(404).json({ error: 'Not found' });
+  // }
 
   // Crear o encontrar usuario de desarrollo
   let usuario = await prisma.usuario.findFirst({ where: { email: 'admin@crm-dev.com' } });
