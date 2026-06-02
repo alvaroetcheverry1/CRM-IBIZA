@@ -1,6 +1,6 @@
 import { MOCK_DATA } from './mockData';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 function delay(ms = 200) {
   return new Promise(resolve => setTimeout(resolve, ms));
