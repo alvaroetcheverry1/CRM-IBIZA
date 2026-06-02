@@ -172,16 +172,53 @@ router.post('/webhook', async (req, res) => {
         console.log(`Mensaje recibido de ${contactName} (${waId}): ${messageText}`);
 
         try {
+          // 1. Asegurar la creación del lead para tener un clienteId
+          const { email, telefono } = detectarEmailYTelefono(messageText);
+          const cliente = await guardarLeadAutomatico(contactName, email, telefono || waId, messageText);
+
+          let history = [];
+          
+          if (cliente) {
+            // Guardar el mensaje entrante
+            await prisma.mensajeWhatsApp.create({
+              data: { clienteId: cliente.id, rol: 'user', contenido: messageText }
+            });
+
+            // Cargar los últimos 6 mensajes para construir el contexto
+            const ultimosMensajes = await prisma.mensajeWhatsApp.findMany({
+              where: { clienteId: cliente.id },
+              orderBy: { creadoEn: 'desc' },
+              take: 6
+            });
+            
+            // Ordenar cronológicamente (ascendente)
+            history = ultimosMensajes.reverse().map(m => ({
+              role: m.rol,
+              content: m.contenido
+            }));
+            
+            // Eliminar el último (el actual) porque procesarMensajeConIA lo añade al final
+            history.pop();
+          }
+
+          // 2. Cargar propiedades
           const propiedades = await prisma.propiedad.findMany({
             where: { tipo: 'VACACIONAL', estado: 'DISPONIBLE', activo: true },
             include: { alquilerVacacional: { select: { precioTemporadaAlta: true, precioTemporadaBaja: true } } },
             take: 10,
           });
 
-          // Historia vacía en webhook temporal (en prod, habría que cargarla de DB)
-          const respuesta = await procesarMensajeConIA(messageText, propiedades, []);
+          // 3. Procesar IA
+          const respuesta = await procesarMensajeConIA(messageText, propiedades, history);
 
-          // Enviar respuesta vía Meta API
+          // 4. Guardar respuesta de IA
+          if (cliente && respuesta) {
+            await prisma.mensajeWhatsApp.create({
+              data: { clienteId: cliente.id, rol: 'assistant', contenido: respuesta }
+            });
+          }
+
+          // 5. Enviar respuesta vía Meta API
           if (process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID) {
             const fetch = require('node-fetch');
             await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
@@ -200,10 +237,6 @@ router.post('/webhook', async (req, res) => {
           } else {
             console.warn('WHATSAPP_TOKEN o WHATSAPP_PHONE_ID no configurados. No se envió respuesta real.');
           }
-
-          // Guardar lead
-          const { email, telefono } = detectarEmailYTelefono(messageText);
-          await guardarLeadAutomatico(contactName, email, telefono || waId, messageText);
 
         } catch (error) {
           console.error('Error procesando webhook interno:', error);

@@ -269,6 +269,7 @@ model Cliente {
 
   actividades   Actividad[]
   documentos    Documento[]
+  mensajesWhatsApp MensajeWhatsApp[]
 }
 
 model ContratoMandato {
@@ -372,4 +373,15 @@ model PublicacionPortal {
 
   @@unique([propiedadId, portal])
   @@index([portal, estado])
+}
+
+model MensajeWhatsApp {
+  id        String   @id @default(cuid())
+  clienteId String
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  rol       String   // "user" (cliente) o "assistant" (IA/agente)
+  contenido String
+  creadoEn  DateTime @default(now())
+
+  @@index([clienteId])
 }
