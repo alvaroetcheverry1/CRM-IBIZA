@@ -79,12 +79,34 @@ export default function MatchmakingModal({ propiedad, onClose }) {
     return () => { mounted = false; };
   }, [propiedad.id]);
 
-  async function handleSend(m) {
+  const [pitchDraft, setPitchDraft] = useState(null);
+  const [draftText,  setDraftText]  = useState('');
+
+  async function handleDraftDossier(m) {
     setSending(m.id);
     try {
-      await matchmakingApi.enviarDossier({ clienteId: m.id, propiedadId: propiedad.id, nombreCliente: `${m.nombre} ${m.apellidos || ''}` });
+      const res = await matchmakingApi.generarPitch({ clienteId: m.id, propiedadId: propiedad.id });
+      setPitchDraft(m.id);
+      setDraftText(res.pitch);
+    } catch {
+      toast.error('Error generando borrador con IA');
+    } finally {
+      setSending(null);
+    }
+  }
+
+  async function handleSendDossier(m) {
+    setSending(m.id);
+    try {
+      await matchmakingApi.enviarDossier({ 
+        clienteId: m.id, 
+        propiedadId: propiedad.id, 
+        nombreCliente: `${m.nombre} ${m.apellidos || ''}`,
+        mensaje: draftText 
+      });
       setSentIds(prev => new Set([...prev, m.id]));
       toast.success(`📧 Dossier marcado como enviado a ${m.nombre} ${m.apellidos || ''}`);
+      setPitchDraft(null);
     } catch {
       toast.error('Error al enviar dossier');
     } finally {
@@ -175,7 +197,7 @@ export default function MatchmakingModal({ propiedad, onClose }) {
                           <button
                             className="btn"
                             disabled={sending === m.id || sentIds.has(m.id)}
-                            onClick={() => handleSend(m)}
+                            onClick={() => handleDraftDossier(m)}
                             style={{ background: sentIds.has(m.id) ? '#059669' : '#1A3A5C', color: 'white', fontSize: '0.78rem', padding: '0.45rem 0.85rem', display: 'flex', alignItems: 'center', gap: 5 }}
                           >
                             {sending === m.id ? <Loader2 size={13} className="spin" /> : <Send size={13} />}
@@ -209,6 +231,27 @@ export default function MatchmakingModal({ propiedad, onClose }) {
                       {expanded.has(m.id) && m.explicacion && (
                         <div style={{ marginTop: '0.5rem', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 6, padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: '#3730A3', lineHeight: 1.5 }}>
                           ✨ {m.explicacion}
+                        </div>
+                      )}
+
+                      {/* Editor Pitch IA */}
+                      {pitchDraft === m.id && (
+                        <div style={{ marginTop: '0.75rem', background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: 8, padding: '1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: '#0F172A', fontWeight: 600, fontSize: '0.85rem' }}>
+                            <Bot size={16} color="#C9A84C" /> Mensaje sugerido por Sofía IA
+                          </div>
+                          <textarea
+                            className="form-input"
+                            style={{ width: '100%', minHeight: 120, fontSize: '0.85rem', resize: 'vertical' }}
+                            value={draftText}
+                            onChange={e => setDraftText(e.target.value)}
+                          />
+                          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
+                            <button onClick={() => setPitchDraft(null)} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Cancelar</button>
+                            <button onClick={() => handleSendDossier(m)} className="btn" style={{ background: '#25D366', color: 'white', borderColor: '#25D366', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', gap: 5 }}>
+                              <Send size={14} /> Enviar a WhatsApp / Email
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -83,6 +83,54 @@ function buildExplicacion(cliente, propiedad, score) {
   return `Match de ${score}% porque ${parts.join(', ')}.`;
 }
 
+// Función para enriquecer el Top 5 con IA
+async function enriquecerMatchesConIA(matches, entidadPrincipal, tipoEntidad) {
+  if (!openai || matches.length === 0) return matches;
+  
+  const topMatches = matches.slice(0, 5);
+  
+  const promptData = topMatches.map((m, i) => {
+    if (tipoEntidad === 'propiedad') {
+      return `[ID: ${i}] Cliente: ${m.nombre} ${m.apellidos || ''}. Presupuesto: ${m.presupuesto}. Zona: ${m.zonaInteres}. Habitaciones min: ${m.habitacionesMin}. Notas: ${m.notas || 'Sin notas'}. Score CRM: ${m.score}%`;
+    } else {
+      return `[ID: ${i}] Propiedad: ${m.nombre}. Zona: ${m.zona}. Habitaciones: ${m.habitaciones}. Precio: ${m.venta?.precioVenta || m.alquilerVacacional?.precioTemporadaAlta || m.alquilerLargaDuracion?.rentaMensual || 'No listado'}. Notas: ${m.notas || 'Sin notas'}. Score CRM: ${m.score}%`;
+    }
+  }).join('\n');
+  
+  const ctx = tipoEntidad === 'propiedad' 
+    ? `Propiedad: ${entidadPrincipal.nombre}. Zona: ${entidadPrincipal.zona}. Habitaciones: ${entidadPrincipal.habitaciones}. Precio: ${entidadPrincipal.venta?.precioVenta || entidadPrincipal.alquilerVacacional?.precioTemporadaAlta || entidadPrincipal.alquilerLargaDuracion?.rentaMensual}. Notas: ${entidadPrincipal.notas}`
+    : `Cliente: ${entidadPrincipal.nombre}. Presupuesto: ${entidadPrincipal.presupuesto}. Zona: ${entidadPrincipal.zonaInteres}. Hab Min: ${entidadPrincipal.habitacionesMin}. Notas: ${entidadPrincipal.notas}`;
+
+  const sysPrompt = `Eres un agente inmobiliario de lujo evaluando compatibilidad.
+Te daré los datos de una ${tipoEntidad === 'propiedad' ? 'propiedad' : 'cliente'} y una lista de top 5 ${tipoEntidad === 'propiedad' ? 'clientes' : 'propiedades'} compatibles.
+Escribe una breve frase persuasiva (máx 20 palabras) para cada uno explicando por qué es un buen "match" destacando los puntos fuertes basados en los datos. No seas genérico.
+Devuelve un JSON estrictamente con este formato:
+{ "explicaciones": [ "explicacion ID 0", "explicacion ID 1", ... ] }`;
+
+  try {
+    const res = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: sysPrompt },
+        { role: 'user', content: `Contexto Principal:\n${ctx}\n\nCandidatos:\n${promptData}` }
+      ],
+      temperature: 0.4,
+      response_format: { type: 'json_object' }
+    });
+    
+    const parsed = JSON.parse(res.choices[0].message.content);
+    if (parsed.explicaciones && parsed.explicaciones.length === topMatches.length) {
+      topMatches.forEach((m, i) => {
+        m.explicacion = parsed.explicaciones[i];
+      });
+    }
+  } catch (err) {
+    console.error('Error enriqueciendo matches con IA', err);
+  }
+  
+  return matches;
+}
+
 // GET /api/matchmaking/:propiedadId
 router.get('/:propiedadId', authenticate, async (req, res) => {
   try {
@@ -105,11 +153,14 @@ router.get('/:propiedadId', authenticate, async (req, res) => {
       take: 200,
     });
 
-    const matches = clientes
+    let matches = clientes
       .map(c => ({ ...c, score: calcScore(c, propiedad), explicacion: buildExplicacion(c, propiedad, calcScore(c, propiedad)) }))
       .filter(c => c.score >= 40)
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
+
+    // IA Enrichment
+    await enriquecerMatchesConIA(matches, propiedad, 'propiedad');
 
     res.json({ matches, propiedad: { nombre: propiedad.nombre, tipo: propiedad.tipo, zona: propiedad.zona } });
   } catch (err) {
@@ -134,8 +185,6 @@ router.get('/cliente/:clienteId', authenticate, async (req, res) => {
     else tiposPropiedad = ['VENTA', 'VACACIONAL', 'LARGA_DURACION'];
 
     const propiedades = await prisma.propiedad.findMany({
-      // Considerar todas las NO vendidas ni alquiladas fuertemente, 
-      // pero por ahora filtramos los estados definitivos:
       where: { activo: true, tipo: { in: tiposPropiedad }, estado: { notIn: ['VENDIDA', 'ALQUILADA'] } },
       include: {
         venta: true,
@@ -145,11 +194,14 @@ router.get('/cliente/:clienteId', authenticate, async (req, res) => {
       take: 200,
     });
 
-    const matches = propiedades
+    let matches = propiedades
       .map(p => ({ ...p, score: calcScore(cliente, p), explicacion: buildExplicacion(cliente, p, calcScore(cliente, p)) }))
       .filter(p => p.score >= 40)
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
+
+    // IA Enrichment
+    await enriquecerMatchesConIA(matches, cliente, 'cliente');
 
     res.json({ matches, cliente: { nombre: cliente.nombre, apellidos: cliente.apellidos, tipo: cliente.tipo, presupuesto: cliente.presupuesto } });
   } catch (err) {
@@ -157,25 +209,71 @@ router.get('/cliente/:clienteId', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/matchmaking/generar-pitch
+router.post('/generar-pitch', authenticate, async (req, res) => {
+  try {
+    const { clienteId, propiedadId } = req.body;
+    const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
+    const propiedad = await prisma.propiedad.findUnique({ 
+      where: { id: propiedadId },
+      include: { venta: true, alquilerVacacional: true, alquilerLargaDuracion: true }
+    });
+
+    if (!cliente || !propiedad) return res.status(404).json({ error: 'No encontrado' });
+
+    if (!openai) {
+      return res.json({ pitch: `Hola ${cliente.nombre}, te envío información de ${propiedad.nombre}. Saludos.` });
+    }
+
+    const precio = propiedad.venta?.precioVenta || propiedad.alquilerVacacional?.precioTemporadaAlta || propiedad.alquilerLargaDuracion?.rentaMensual || '';
+
+    const sysPrompt = `Eres Sofía, asistente comercial de Ibiza Luxury Dreams.
+Redacta un mensaje de WhatsApp/Email muy elegante, persuasivo y exclusivo dirigido a ${cliente.nombre}.
+Presenta la propiedad "${propiedad.nombre}" ubicada en ${propiedad.zona} con ${propiedad.habitaciones} habitaciones.
+Precio listado: ${precio} EUR.
+Presupuesto del cliente: ${cliente.presupuesto} EUR.
+Aprovecha cualquier detalle de las notas del cliente (${cliente.notas || 'Ninguna'}) o de la propiedad (${propiedad.descripcion || 'Ninguna'}) para persuadir.
+Máximo 3 párrafos cortos. No incluyas asunto, redacta directamente el mensaje de chat. Usa emojis elegantes.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'system', content: sysPrompt }],
+      temperature: 0.6,
+    });
+
+    res.json({ pitch: response.choices[0].message.content });
+  } catch (err) {
+    res.status(500).json({ error: 'Error generando pitch', detail: err.message });
+  }
+});
+
 // POST /api/matchmaking/enviar-dossier
 router.post('/enviar-dossier', authenticate, async (req, res) => {
   try {
-    const { clienteId, propiedadId, emailDestino, nombreCliente } = req.body;
+    const { clienteId, propiedadId, emailDestino, nombreCliente, mensaje } = req.body;
 
-    // En producción usaría nodemailer – por ahora registra en la base de datos y devuelve OK
     const propiedad = await prisma.propiedad.findUnique({
       where: { id: propiedadId },
       select: { nombre: true, referencia: true, urlDriveCarpeta: true },
     });
 
-    console.log(`[MATCHMAKING] Dossier enviado a ${emailDestino || nombreCliente} para ${propiedad?.nombre}`);
+    console.log(`[MATCHMAKING] Dossier enviado a ${emailDestino || nombreCliente} para ${propiedad?.nombre}. Mensaje IA:\n${mensaje}`);
 
-    // Actualizar estado del cliente a CONTACTADO si era NUEVO
     if (clienteId) {
       const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
       if (cliente && cliente.estado === 'NUEVO') {
         await prisma.cliente.update({ where: { id: clienteId }, data: { estado: 'CONTACTADO' } });
       }
+      
+      // Registrar en Actividades
+      await prisma.actividad.create({
+        data: {
+          tipo: 'EMAIL',
+          descripcion: `Dossier de ${propiedad?.nombre} enviado. Mensaje:\n${mensaje}`,
+          clienteId: cliente.id,
+          propiedadId: propiedad.id
+        }
+      });
     }
 
     res.json({ ok: true, mensaje: `Dossier de ${propiedad?.nombre} marcado como enviado` });

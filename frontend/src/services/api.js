@@ -280,9 +280,34 @@ export const facturasApi = {
 };
 
 export const matchmakingApi = {
-  getMatches: (propiedadId) => apiCall(`/matchmaking/${propiedadId}`),
-  getMatchesForCliente: (clienteId) => apiCall(`/matchmaking/cliente/${clienteId}`),
-  enviarDossier: (data) => apiCall('/matchmaking/enviar-dossier', { method: 'POST', body: JSON.stringify(data) }),
+  getMatches: async (propiedadId) => {
+    const res = await fetch(`${BASE_URL}/matchmaking/${propiedadId}`, getHeaders());
+    if (!res.ok) throw new Error('Error al obtener matches');
+    return res.json();
+  },
+  getMatchesForCliente: async (clienteId) => {
+    const res = await fetch(`${BASE_URL}/matchmaking/cliente/${clienteId}`, getHeaders());
+    if (!res.ok) throw new Error('Error al obtener matches del cliente');
+    return res.json();
+  },
+  generarPitch: async (data) => {
+    const res = await fetch(`${BASE_URL}/matchmaking/generar-pitch`, {
+      ...getHeaders(),
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Error al generar pitch IA');
+    return res.json();
+  },
+  enviarDossier: async (data) => {
+    const res = await fetch(`${BASE_URL}/matchmaking/enviar-dossier`, {
+      ...getHeaders(),
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Error al enviar dossier');
+    return res.json();
+  }
 };
 
 export const icalApi = {
