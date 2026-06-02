@@ -58,6 +58,7 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3001',   // Posible segundo frontend
   'https://ibizaluxurydreams.com',
   'https://www.ibizaluxurydreams.com',
+  'https://crm-ibiza.vercel.app', // Vercel explícito
 ];
 app.use(cors({
   origin: (origin, cb) => {
