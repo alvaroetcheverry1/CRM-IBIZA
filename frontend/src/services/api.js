@@ -340,6 +340,8 @@ export const whatsappApi = {
   sendMessage: (data) => apiCall('/whatsapp/message', { method: 'POST', body: JSON.stringify(data) }),
   guardarLead: (data) => apiCall('/whatsapp/guardar-lead', { method: 'POST', body: JSON.stringify(data) }),
   getLeadsRecientes: () => apiCall('/whatsapp/leads-recientes'),
+  getHistorial: (clienteId) => apiCall(`/whatsapp/historial/${clienteId}`),
+  enviarMensajeReal: (clienteId, mensaje) => apiCall('/whatsapp/enviar', { method: 'POST', body: JSON.stringify({ clienteId, mensaje }) })
 };
 
 export default {};

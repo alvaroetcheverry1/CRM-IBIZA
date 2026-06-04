@@ -67,7 +67,7 @@ class ScraperService {
         job.logs.push(`🔗 Detectadas ${urls.length} URLs personalizadas. Usando Web Scraper Universal...`);
         
         // Usamos un actor genérico pero potente para extraer contenido de cualquier sitio
-        actorId = 'apify/web-scraper'; 
+        actorId = 'apify~web-scraper'; 
         runInput = {
           startUrls: urls.map(url => ({ url })),
           maxPagesPerCrawl: urls.length * 2,
@@ -79,7 +79,7 @@ class ScraperService {
           }
         };
       } else if (config.plataforma === 'idealista') {
-        actorId = 'igolaizola/idealista-agency-scraper';
+        actorId = 'igolaizola~idealista-agency-scraper';
         runInput = {
           location: config.zona,
           maxPrice: config.precioMax ? parseInt(config.precioMax) : undefined,
@@ -87,10 +87,10 @@ class ScraperService {
           ignoreAgencies: true 
         };
       } else if (config.plataforma === 'airbnb') {
-        actorId = 'dtrungtin/airbnb-scraper';
+        actorId = 'dtrungtin~airbnb-scraper';
         runInput = { locationQuery: config.zona, maxListings: 20 };
       } else if (config.plataforma === 'facebook') {
-        actorId = 'apify/facebook-groups-scraper';
+        actorId = 'apify~facebook-groups-scraper';
         runInput = { urls: [`https://www.facebook.com/search/groups/?q=${encodeURIComponent(config.zona)}`] };
       } else {
         throw new Error(`Configuración de plataforma (${config.plataforma}) no reconocida y sin URLs directas.`);
