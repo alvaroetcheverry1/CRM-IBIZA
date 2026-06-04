@@ -34,16 +34,58 @@ function formatMoney(n) {
 }
 
 function PropertyCard({ p, onClick }) {
-  const imageUrl = p.fotoPrincipal || (p.documentos && p.documentos[0]?.urlDrive) || null;
+  let images = [];
+  if (p.fotos) {
+    try {
+      const parsed = JSON.parse(p.fotos);
+      if (Array.isArray(parsed)) {
+        images = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
+      }
+    } catch(e) {}
+  }
+  
+  if (images.length === 0 && p.fotoPrincipal) {
+    images.push(p.fotoPrincipal);
+  }
+  if (images.length === 0 && p.documentos && p.documentos[0]?.urlDrive) {
+    images.push(p.documentos[0].urlDrive);
+  }
+  
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  const nextImg = (e) => {
+    e.stopPropagation();
+    setCurrentIdx((prev) => (prev + 1) % images.length);
+  };
+  
+  const prevImg = (e) => {
+    e.stopPropagation();
+    setCurrentIdx((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   return (
     <div className="property-card" onClick={onClick}>
-      <div className="property-card-img">
-        {imageUrl
-          ? <img src={imageUrl} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div className="property-card-img" style={{ position: 'relative' }}>
+        {images.length > 0
+          ? (
+            <>
+              <img src={images[currentIdx]} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.2s' }} />
+              {images.length > 1 && (
+                <>
+                  <button onClick={prevImg} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: 2 }}>‹</button>
+                  <button onClick={nextImg} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: 2 }}>›</button>
+                  <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
+                    {images.map((_, i) => (
+                      <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: i === currentIdx ? 'white' : 'rgba(255,255,255,0.4)', transition: 'background 0.2s' }} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )
           : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3rem'}}>🏠</div>
         }
-        <div className="property-card-badges">
+        <div className="property-card-badges" style={{ zIndex: 10 }}>
           <span className={`badge ${TIPO_BADGE[p.tipo]}`}>{TIPO_LABEL[p.tipo]}</span>
           <span className={`badge ${ESTADO_BADGE[p.estado] || ''}`}>{p.estado}</span>
         </div>
