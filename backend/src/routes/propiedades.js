@@ -88,18 +88,27 @@ router.get('/', authenticate, [
   query('tipo').optional().isIn(['VACACIONAL', 'LARGA_DURACION', 'VENTA']),
   query('estado').optional().isString(),
   query('zona').optional().isString(),
+  query('search').optional().isString(),
   query('page').optional().isInt({ min: 1 }).toInt(),
   query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
 ], async (req, res) => {
   if (handleValidation(req, res)) return;
 
-  const { tipo, estado, zona, page = 1, limit = 20 } = req.query;
+  const { tipo, estado, zona, search, page = 1, limit = 20 } = req.query;
   const skip = (page - 1) * limit;
 
   const where = { activo: true };
   if (tipo) where.tipo = tipo;
   if (estado) where.estado = estado;
   if (zona) where.zona = { contains: zona, mode: 'insensitive' };
+  
+  if (search) {
+    where.OR = [
+      { nombre: { contains: search, mode: 'insensitive' } },
+      { zona: { contains: search, mode: 'insensitive' } },
+      { referencia: { contains: search, mode: 'insensitive' } }
+    ];
+  }
 
   try {
     const [propiedades, total] = await Promise.all([

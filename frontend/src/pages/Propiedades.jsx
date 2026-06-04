@@ -76,19 +76,27 @@ export default function Propiedades() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tipo, setTipo] = useState('');
   const [estado, setEstado] = useState('');
   const [page, setPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Debounce simple para la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // Reset page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['propiedades', tipo, estado, page],
-    queryFn: () => propiedadesApi.list({ tipo: tipo || undefined, estado: estado || undefined, page, limit: 12 }),
+    queryKey: ['propiedades', tipo, estado, page, debouncedSearch],
+    queryFn: () => propiedadesApi.list({ tipo: tipo || undefined, estado: estado || undefined, search: debouncedSearch || undefined, page, limit: 12 }),
   });
 
-  const propiedades = (data?.data || []).filter(p =>
-    !search || p.nombre.toLowerCase().includes(search.toLowerCase()) || p.zona.toLowerCase().includes(search.toLowerCase())
-  );
+  const propiedades = data?.data || [];
 
   return (
     <div>

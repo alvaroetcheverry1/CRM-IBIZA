@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '../services/api';
 import { Plus, Search, Phone, Mail, ChevronRight, X, Save, Loader2, Pencil, Trash2, Bot } from 'lucide-react';
@@ -273,9 +273,17 @@ export default function Clientes() {
   const [view, setView]       = useState('lista');
   const [selected, setSelected] = useState(null);
 
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  // Debounce simple para la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['clientes', estado],
-    queryFn: () => clientesApi.list({ estado: estado || undefined, limit: 100 }),
+    queryKey: ['clientes', estado, debouncedSearch],
+    queryFn: () => clientesApi.list({ estado: estado || undefined, search: debouncedSearch || undefined, limit: 500 }),
     refetchInterval: 15000,
   });
 
@@ -288,9 +296,7 @@ export default function Clientes() {
     },
   });
 
-  const clientes = (data?.data || []).filter(c =>
-    !search || `${c.nombre} ${c.apellidos || ''} ${c.email || ''} ${c.telefono || ''}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const clientes = data?.data || [];
 
   const pipeline = ESTADOS.reduce((acc, e) => {
     acc[e] = clientes.filter(c => c.estado === e);
