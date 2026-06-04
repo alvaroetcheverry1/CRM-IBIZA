@@ -23,21 +23,15 @@ import CatalogoPublico from './pages/CatalogoPublico';
 import GeneradorPropuestas from './pages/GeneradorPropuestas';
 import PipelineVentas from './pages/PipelineVentas';
 import MigradorEntidades from './pages/MigradorEntidades';
-import Onboarding from './pages/Onboarding';
+import Configuracion from './pages/Configuracion';
 
 function PrivateRoute({ children }) {
   const { user, loading: authLoading } = useAuth();
-  const { config, loading: agencyLoading } = useAgency();
-  const location = useLocation();
+  const { loading: agencyLoading } = useAgency();
 
   if (authLoading || agencyLoading) return null;
   
   if (!user) return <Navigate to="/login" replace />;
-  
-  // Si no hay configuración y no estamos ya en /setup, redirigir
-  if (!config && location.pathname !== '/setup') {
-    return <Navigate to="/setup" replace />;
-  }
 
   return children;
 }
@@ -47,9 +41,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/catalogo/vacacional" element={<CatalogoPublico />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/setup" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="configuracion" element={<Configuracion />} />
         <Route path="propiedades" element={<Propiedades />} />
         <Route path="propiedades/:id" element={<PropiedadDetalle />} />
         <Route path="vacacional" element={<AlquilerVacacional />} />

@@ -30,6 +30,7 @@ const NAV_ITEMS = [
   { to: '/migracion', icon: Database, label: 'Migration Wizard' },
   { to: '/facturacion', icon: FileText, label: 'Facturación' },
   { to: '/propuestas', icon: Presentation, label: 'Generador Propuestas' },
+  { to: '/configuracion', icon: Settings, label: 'Configuración de Agencia' },
 ];
 
 function initials(name, lastname) {
