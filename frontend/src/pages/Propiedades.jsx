@@ -69,7 +69,13 @@ function PropertyCard({ p, onClick }) {
         {images.length > 0
           ? (
             <>
-              <img src={images[currentIdx]} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.2s' }} />
+              <img 
+                src={images[currentIdx]} 
+                alt={p.nombre} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.2s' }} 
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }}
+              />
+              <div style={{display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize:'3rem', background:'#f0f0f0'}}>🏠</div>
               {images.length > 1 && (
                 <>
                   <button onClick={prevImg} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: 2 }}>‹</button>
