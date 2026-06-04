@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AgencyProvider, useAgency } from './context/AgencyContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -22,11 +23,23 @@ import CatalogoPublico from './pages/CatalogoPublico';
 import GeneradorPropuestas from './pages/GeneradorPropuestas';
 import PipelineVentas from './pages/PipelineVentas';
 import MigradorEntidades from './pages/MigradorEntidades';
+import Onboarding from './pages/Onboarding';
 
 function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  return user ? children : <Navigate to="/login" replace />;
+  const { user, loading: authLoading } = useAuth();
+  const { config, loading: agencyLoading } = useAgency();
+  const location = useLocation();
+
+  if (authLoading || agencyLoading) return null;
+  
+  if (!user) return <Navigate to="/login" replace />;
+  
+  // Si no hay configuración y no estamos ya en /setup, redirigir
+  if (!config && location.pathname !== '/setup') {
+    return <Navigate to="/setup" replace />;
+  }
+
+  return children;
 }
 
 function AppRoutes() {
@@ -34,6 +47,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/catalogo/vacacional" element={<CatalogoPublico />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/setup" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="propiedades" element={<Propiedades />} />
@@ -62,8 +76,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <AgencyProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </AgencyProvider>
   );
 }

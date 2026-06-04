@@ -36,13 +36,16 @@ function initials(name, lastname) {
   return `${name?.[0] || ''}${lastname?.[0] || ''}`.toUpperCase();
 }
 
+import { useAgency } from '../context/AgencyContext';
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const { config, logoUrl } = useAgency();
 
   const { data: newLeadsData } = useQuery({
     queryKey: ['clientes', 'NUEVO_SIDEBAR'],
     queryFn: () => clientesApi.list({ estado: 'NUEVO', limit: 1 }),
-    refetchInterval: 5 * 60 * 1000, // 5 minutos (antes 15s → llenaba los logs)
+    refetchInterval: 5 * 60 * 1000, // 5 minutos
     staleTime: 2 * 60 * 1000,
   });
 
@@ -51,8 +54,14 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <h1>Ibiza Luxury<br/>Dreams</h1>
-        <span>Real Estate · Ibiza</span>
+        {logoUrl !== '/logo.png' && logoUrl ? (
+          <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px', maxWidth: '100%', objectFit: 'contain' }} />
+        ) : (
+          <>
+            <h1>{config?.nombreComercial || 'Ibiza Luxury'}<br/>Dreams</h1>
+            <span>Real Estate · Ibiza</span>
+          </>
+        )}
       </div>
 
       <nav className="sidebar-nav">

@@ -91,6 +91,8 @@ app.use('/api/uploads', (req, res, next) => {
 }, express.static(path.join(__dirname, '../public/uploads')));
 
 // ─── Rutas ─────────────────────────────────────────────────
+const configuracionRoutes = require('./routes/configuracion');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/propiedades', propiedadesRoutes);
 app.use('/api/propietarios', propietariosRoutes);
@@ -107,6 +109,7 @@ app.use('/api/actividades', actividadesRoutes);
 app.use('/api/migracion', migracionRoutes);
 app.use('/api/portales', portalesRoutes);
 app.use('/api/scraper', scraperRoutes);
+app.use('/api/configuracion', configuracionRoutes);
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/health', (req, res) => {
