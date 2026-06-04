@@ -29,7 +29,9 @@ class DriveService {
     try {
       let auth;
       if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
-        const key = require(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
+        const path = require('path');
+        const keyPath = path.resolve(__dirname, '../../', process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
+        const key = require(keyPath);
         auth = new google.auth.GoogleAuth({
           credentials: key,
           scopes: ['https://www.googleapis.com/auth/drive'],
@@ -180,14 +182,15 @@ class DriveService {
     try {
       const drive = await this.getClient();
       if (!drive) {
-        logger.info(`Drive (mock local): guardando dossier ${filename}`);
-        const fs = require('fs');
-        const path = require('path');
-        const uploadsDir = path.join(__dirname, '../../public/uploads');
-        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-        
-        fs.writeFileSync(path.join(uploadsDir, filename), fileBuffer);
-        return { url: `/api/uploads/${filename}`, fileId: `local_${filename}` };
+        logger.info(`Drive no configurado: guardando dossier ${filename} en Supabase Storage`);
+        try {
+          const { uploadFile } = require('./supabaseStorageService');
+          const url = await uploadFile(fileBuffer, filename, 'application/pdf');
+          return { url, fileId: `supabase_${filename}` };
+        } catch (sbErr) {
+          logger.error('Error subiendo dossier a Supabase:', sbErr.message);
+          return { url: null, fileId: null };
+        }
       }
 
       // 1. Obtener la carpeta del Tipo de Propiedad
@@ -224,11 +227,10 @@ class DriveService {
    * Sube un archivo a Drive en la carpeta correspondiente a la propiedad
    */
   async subirDocumento(file, propiedadId, tipo) {
-    // SIEMPRE guardamos localamente primero — garante que la imagen se vea en el browser
-    // (Las URLs de Google Drive tienen restricciones CORS que impiden mostrarlas directamente)
-    const localResult = this._guardarLocal(file);
+    // SIEMPRE guardamos en Supabase primero — garantiza que la imagen se vea en el browser (CDN)
+    const localResult = await this._guardarSupabase(file);
 
-    // Sincronizar a Drive de forma async (no bloquea, no afecta al usuario)
+    // Opcional: Sincronizar a Drive de forma async (no bloquea)
     try {
       const drive = await this.getClient();
       if (drive) {
@@ -254,28 +256,17 @@ class DriveService {
     return localResult;
   }
 
-  _guardarLocal(file) {
-    logger.info(`Drive (mock offline): guardando documento localmente ${file.originalname}`);
-    const fs = require('fs');
-    const path = require('path');
-    const uploadsDir = path.join(__dirname, '../../public/uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    
+  async _guardarSupabase(file) {
+    logger.info(`DriveService fallback: guardando documento en Supabase ${file.originalname}`);
     const safeName = Date.now() + '_' + file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
-    const filePath = path.join(uploadsDir, safeName);
-    
-    if (file.buffer) {
-      fs.writeFileSync(filePath, file.buffer);
-    } else {
-      fs.writeFileSync(filePath, 'Mock file content');
+    try {
+      const { uploadFile } = require('./supabaseStorageService');
+      const url = await uploadFile(file.buffer || Buffer.from('Mock'), safeName, file.mimetype || 'application/octet-stream');
+      return { url, fileId: `supabase_${safeName}` };
+    } catch (e) {
+      logger.error('Error fallback Supabase:', e);
+      throw e;
     }
-
-    return {
-      url: `/api/uploads/${safeName}`,
-      fileId: `local_${safeName}`,
-    };
   }
 
   async eliminarArchivo(fileId) {

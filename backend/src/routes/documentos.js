@@ -75,19 +75,18 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
       finalUrl = url;
       finalFileId = fileId;
     } catch (driveErr) {
-      // Drive no disponible (sin credenciales en dev) — guardar localmente
-      const uploadsDir = path.join(__dirname, '../../public/uploads');
-      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-      // Nombre de archivo único para evitar colisiones
-      const ext = path.extname(req.file.originalname) || '.bin';
-      const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
-      const filePath = path.join(uploadsDir, safeName);
-
-      fs.writeFileSync(filePath, req.file.buffer);
-      // URL pública servida por Express
-      finalUrl = `/api/uploads/${safeName}`;
-      console.log(`[upload] Drive no disponible, guardado localmente: ${finalUrl}`);
+      // Drive no disponible (sin credenciales), subimos a Supabase Storage
+      try {
+        const { uploadFile } = require('../services/supabaseStorageService');
+        const ext = require('path').extname(req.file.originalname) || '.bin';
+        const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+        const sUrl = await uploadFile(req.file.buffer, safeName, req.file.mimetype);
+        finalUrl = sUrl;
+        console.log(`[upload] Guardado en Supabase Storage: ${finalUrl}`);
+      } catch (sbErr) {
+        console.error('[upload] Error en Supabase Storage:', sbErr);
+        throw new Error('No se pudo guardar el archivo ni en Drive ni en Supabase.');
+      }
     }
 
     // 3. Actualizar documento con la URL final

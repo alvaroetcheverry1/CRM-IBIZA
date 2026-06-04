@@ -10,3 +10,4 @@ backend/dev.db-journal
 frontend/public/uploads/
 .DS_Store
 *.log
+google-credentials.json

@@ -53,6 +53,8 @@ router.post('/', authenticate, [
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   try {
     const cliente = await prisma.cliente.create({ data: req.body });
+    const { sheetsService } = require('../services/sheetsService');
+    sheetsService.sincronizarCliente(cliente).catch(() => {});
     res.status(201).json(cliente);
   } catch (err) {
     console.error('Error creando lead:', err);
@@ -67,6 +69,8 @@ router.put('/:id', authenticate, async (req, res) => {
       where: { id: req.params.id },
       data: req.body,
     });
+    const { sheetsService } = require('../services/sheetsService');
+    sheetsService.sincronizarCliente(cliente).catch(() => {});
     res.json(cliente);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -128,13 +128,13 @@ class IAService {
       if (size >= 25000 && !seen.has(size)) {
         seen.add(size);
         const outName = `${timestamp}_${base}_img${idx + 1}.jpg`;
-        const outPath = path.join(uploadsDir, outName);
         try {
-          fs.writeFileSync(outPath, jpegData);
-          urls.push(`/api/uploads/${outName}`);
+          const { uploadFile } = require('./supabaseStorageService');
+          const sUrl = await uploadFile(jpegData, outName, 'image/jpeg');
+          urls.push(sUrl);
           idx++;
         } catch (e) {
-          logger.warn(`[PDF] Error guardando imagen ${idx}: ${e.message}`);
+          logger.warn(`[PDF] Error subiendo imagen ${idx} a Supabase: ${e.message}`);
         }
       }
 
@@ -205,8 +205,13 @@ class IAService {
           const jpegBuf = canvas.toBuffer('image/jpeg', { quality: 90 });
           if (jpegBuf.length > 5000) { // Descartar páginas casi vacías (<5KB)
             const outName = `${timestamp}_${base}_pg${i}.jpg`;
-            fs.writeFileSync(path.join(uploadsDir, outName), jpegBuf);
-            urls.push(`/api/uploads/${outName}`);
+            try {
+              const { uploadFile } = require('./supabaseStorageService');
+              const sUrl = await uploadFile(jpegBuf, outName, 'image/jpeg');
+              urls.push(sUrl);
+            } catch (e) {
+              logger.warn(`[PDF] Error subiendo página ${i} a Supabase:`, e.message);
+            }
           }
         } catch (pageErr) {
           logger.warn(`[PDF] Error obteniendo página ${i}:`, pageErr.message);
@@ -489,25 +494,17 @@ class IAService {
 
     // 4c. Vision sobre imágenes (fotos reales del PDF o páginas renderizadas)
     if (fotosUrls.length > 0) {
-      const fs = require('fs');
-      const path = require('path');
-      const uploadsDir = path.join(__dirname, '../../public/uploads');
-
       logger.info(`[PDF] Vision: analizando ${Math.min(fotosUrls.length, 6)} imágenes del dossier`);
       try {
         const imageMsgs = [];
         for (const url of fotosUrls.slice(0, 6)) {
-          const fname = url.replace('/api/uploads/', '');
-          const fullPath = path.join(uploadsDir, fname);
           try {
-            const buf = fs.readFileSync(fullPath);
-            const ext = path.extname(fname).slice(1).toLowerCase();
-            const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+            // Enviamos directamente la URL pública de Supabase a OpenAI
             imageMsgs.push({
               type: 'image_url',
-              image_url: { url: `data:${mime};base64,${buf.toString('base64')}`, detail: 'high' },
+              image_url: { url: url, detail: 'high' },
             });
-          } catch { /* saltar imagen si no se puede leer */ }
+          } catch { /* ignorar */ }
         }
 
         if (imageMsgs.length > 0) {
