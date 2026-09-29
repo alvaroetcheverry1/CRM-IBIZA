@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '../services/api';
 import { Plus, Search, Phone, Mail, ChevronRight, X, Save, Loader2, Pencil, Trash2, Bot } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ActividadTimeline from '../components/ActividadTimeline';
 import MatchmakingClienteModal from '../components/MatchmakingClienteModal';
+import * as XLSX from 'xlsx';
 
 const ESTADOS = ['NUEVO', 'CONTACTADO', 'VISITA', 'OFERTA', 'CERRADO', 'DESCARTADO'];
 const TIPOS   = ['COMPRADOR', 'INQUILINO', 'AMBOS'];
@@ -163,6 +164,30 @@ function ClienteDrawer({ cliente, onClose }) {
             </>
           ) : (
             <>
+              {/* Score de Calidad IA */}
+              {cliente.id !== 'nueva' && (
+                <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '1rem', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#8A9BB0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Score Calidad IA</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: cliente.scoreIA >= 70 ? '#059669' : cliente.scoreIA >= 40 ? '#D97706' : '#DC2626' }}>
+                      {cliente.scoreIA != null ? `${cliente.scoreIA}/100` : '—'}
+                    </span>
+                  </div>
+                  <div style={{ height: 8, background: '#E2E8F0', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      width: `${cliente.scoreIA ?? 0}%`, 
+                      background: cliente.scoreIA >= 70 ? 'linear-gradient(90deg, #10B981, #059669)' : cliente.scoreIA >= 40 ? 'linear-gradient(90deg, #FBBF24, #D97706)' : 'linear-gradient(90deg, #F87171, #DC2626)',
+                      borderRadius: 4,
+                      transition: 'width 0.4s ease-out'
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '0.7rem', color: '#64748B' }}>
+                    {cliente.scoreIA >= 70 ? '🟢 Lead altamente calificado y compatible' : cliente.scoreIA >= 40 ? '🟡 Calificación media, revisar detalles' : '🔴 Calificación baja o requiere información'}
+                  </span>
+                </div>
+              )}
+
               {/* Info financiera */}
               <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '1rem', border: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
@@ -272,6 +297,7 @@ export default function Clientes() {
   const [estado, setEstado]   = useState('');
   const [view, setView]       = useState('lista');
   const [selected, setSelected] = useState(null);
+  const [page, setPage]       = useState(1);
 
   const [debouncedSearch, setDebouncedSearch] = useState('');
   
@@ -281,22 +307,108 @@ export default function Clientes() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Resetear página al cambiar filtros
+  useEffect(() => {
+    setPage(1);
+  }, [estado, debouncedSearch]);
+
+  const isPipeline = view === 'pipeline';
+
   const { data, isLoading } = useQuery({
-    queryKey: ['clientes', estado, debouncedSearch],
-    queryFn: () => clientesApi.list({ estado: estado || undefined, search: debouncedSearch || undefined, limit: 500 }),
+    queryKey: ['clientes', estado, debouncedSearch, isPipeline ? 'all' : page],
+    queryFn: () => clientesApi.list({ 
+      estado: estado || undefined, 
+      search: debouncedSearch || undefined, 
+      page: isPipeline ? 1 : page, 
+      limit: isPipeline ? 1000 : 15 
+    }),
     refetchInterval: 15000,
   });
 
-  const updateEstado = useMutation({
-    mutationFn: ({ id, estado }) => clientesApi.update(id, { estado }),
+  const updateClienteMutation = useMutation({
+    mutationFn: ({ id, ...data }) => clientesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toast.success('Estado actualizado');
+      toast.success('Cliente actualizado');
     },
   });
 
+  const [editingCell, setEditingCell] = useState(null); // { id: string, field: string }
+  const [editVal, setEditVal] = useState('');
+
+  const handleInlineSave = (id, field) => {
+    const originalVal = clientes.find(c => c.id === id)?.[field];
+    if (String(originalVal) === String(editVal)) {
+      setEditingCell(null);
+      return;
+    }
+    
+    let parsedVal = editVal;
+    if (field === 'presupuesto') {
+      parsedVal = editVal === '' ? null : parseFloat(editVal);
+    }
+
+    updateClienteMutation.mutate({ id, [field]: parsedVal });
+    setEditingCell(null);
+  };
+  const dragId = useRef(null);
+  const [draggedOverCol, setDraggedOverCol] = useState(null);
+
+  const handleDragStart = (e, id) => {
+    dragId.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDrop = (e, nuevoEstado) => {
+    e.preventDefault();
+    if (!dragId.current) return;
+    const client = clientes.find(c => c.id === dragId.current);
+    if (client && client.estado !== nuevoEstado) {
+      updateClienteMutation.mutate({ id: dragId.current, estado: nuevoEstado });
+    }
+    dragId.current = null;
+  };
   const clientes = data?.data || [];
+
+  const handleExportExcel = () => {
+    toast.success('Generando archivo Excel de clientes...');
+    try {
+      const dataToExport = clientes.map(c => ({
+        'Nombre': c.nombre,
+        'Apellidos': c.apellidos || '',
+        'Email': c.email || '—',
+        'Teléfono': c.telefono || '—',
+        'Tipo': c.tipo,
+        'Estado': c.estado,
+        'Presupuesto': c.presupuesto || 0,
+        'Zona de Interés': c.zonaInteres || '—',
+        'Calidad IA (%)': c.scoreIA != null ? `${c.scoreIA}%` : '—',
+        'Origen': c.origen || '—',
+        'Notas': c.notas || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes");
+      
+      // Auto-ajustar columnas
+      const maxLen = {};
+      dataToExport.forEach(row => {
+        Object.keys(row).forEach(key => {
+          const val = String(row[key] || '');
+          maxLen[key] = Math.max(maxLen[key] || 10, val.length);
+        });
+      });
+      worksheet['!cols'] = Object.keys(maxLen).map(key => ({ wch: maxLen[key] + 3 }));
+
+      XLSX.writeFile(workbook, `Clientes_CRM_Ibiza_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success('Excel de clientes descargado');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al exportar clientes a Excel');
+    }
+  };
 
   const pipeline = ESTADOS.reduce((acc, e) => {
     acc[e] = clientes.filter(c => c.estado === e);
@@ -310,9 +422,12 @@ export default function Clientes() {
           <h2>Clientes &amp; Leads</h2>
           <p>{data?.meta?.total ?? 0} contactos en el pipeline</p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: 8 }}>
           <button className={`filter-chip${view === 'lista' ? ' active' : ''}`} onClick={() => setView('lista')}>Lista</button>
           <button className={`filter-chip${view === 'pipeline' ? ' active' : ''}`} onClick={() => setView('pipeline')}>Pipeline</button>
+          <button className="btn btn-outline" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            Exportar Excel
+          </button>
           <button className="btn btn-primary" onClick={() => setSelected({ id: 'nueva', nombre: '', apellidos: '', tipo: 'COMPRADOR', estado: 'NUEVO' })}><Plus size={16} />Nuevo Lead</button>
         </div>
       </div>
@@ -353,19 +468,38 @@ export default function Clientes() {
       ) : view === 'pipeline' ? (
         <div className="pipeline-board">
           {ESTADOS.map(e => (
-            <div key={e} className="pipeline-column">
+            <div 
+              key={e} 
+              className="pipeline-column"
+              onDragOver={(ev) => { ev.preventDefault(); setDraggedOverCol(e); }}
+              onDragLeave={() => setDraggedOverCol(null)}
+              onDrop={(ev) => { setDraggedOverCol(null); handleDrop(ev, e); }}
+              style={{
+                border: draggedOverCol === e ? '2px dashed var(--primary)' : '2px dashed transparent',
+                background: draggedOverCol === e ? 'rgba(26, 58, 92, 0.05)' : 'transparent',
+                transition: 'all 0.2s',
+                borderRadius: '8px'
+              }}
+            >
               <div className="pipeline-column-header">
                 <span className="pipeline-column-title">{e.charAt(0) + e.slice(1).toLowerCase()}</span>
                 <span className="pipeline-count">{pipeline[e]?.length ?? 0}</span>
               </div>
               {pipeline[e]?.map(c => (
-                <div key={c.id} className="pipeline-card" onClick={() => setSelected(c)} style={{ cursor: 'pointer' }}>
+                <div 
+                  key={c.id} 
+                  className="pipeline-card" 
+                  onClick={() => setSelected(c)} 
+                  draggable
+                  onDragStart={(ev) => handleDragStart(ev, c.id)}
+                  style={{ cursor: 'grab', userSelect: 'none' }}
+                >
                   <div style={{ fontWeight: 600, fontSize: '0.87rem', marginBottom: 4 }}>{c.nombre} {c.apellidos}</div>
                   <div style={{ fontSize: '0.75rem', color: '#8A9BB0', marginBottom: 8 }}>{TIPO_ICON[c.tipo]} {c.tipo} · {c.zonaInteres || '—'}</div>
                   <div style={{ fontSize: '0.75rem', color: '#4A5568', fontWeight: 600 }}>{formatMoney(c.presupuesto)}</div>
                   <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
                     {ESTADOS.filter(s => s !== e).slice(0, 3).map(s => (
-                      <button key={s} onClick={ev => { ev.stopPropagation(); updateEstado.mutate({ id: c.id, estado: s }); }}
+                      <button key={s} onClick={ev => { ev.stopPropagation(); updateClienteMutation.mutate({ id: c.id, estado: s }); }}
                         style={{ fontSize: '0.65rem', padding: '2px 7px', borderRadius: 12, border: '1px solid #DDD8CF', cursor: 'pointer', background: 'white', color: '#4A5568' }}>
                         → {s.charAt(0) + s.slice(1, 4).toLowerCase()}
                       </button>
@@ -385,8 +519,10 @@ export default function Clientes() {
                   <th>Cliente</th>
                   <th>Contacto</th>
                   <th>Tipo</th>
+                  <th>Tiempo</th>
                   <th>Zona interés</th>
                   <th>Presupuesto</th>
+                  <th>Calidad IA</th>
                   <th>Estado</th>
                   <th>Origen</th>
                   <th></th>
@@ -394,11 +530,30 @@ export default function Clientes() {
               </thead>
               <tbody>
                 {clientes.length === 0 ? (
-                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#8A9BB0' }}>Sin clientes</td></tr>
+                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#8A9BB0' }}>Sin clientes</td></tr>
                 ) : clientes.map(c => (
                   <tr key={c.id} onClick={() => setSelected(c)} style={{ cursor: 'pointer' }}>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{c.nombre} {c.apellidos}</div>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {editingCell?.id === c.id && editingCell?.field === 'nombre' ? (
+                        <input
+                          type="text"
+                          value={editVal}
+                          onChange={(ev) => setEditVal(ev.target.value)}
+                          onBlur={() => handleInlineSave(c.id, 'nombre')}
+                          onKeyDown={(ev) => ev.key === 'Enter' && handleInlineSave(c.id, 'nombre')}
+                          autoFocus
+                          className="form-input"
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.85rem' }}
+                        />
+                      ) : (
+                        <div 
+                          onDoubleClick={() => { setEditingCell({ id: c.id, field: 'nombre' }); setEditVal(c.nombre); }}
+                          style={{ fontWeight: 600, cursor: 'text' }}
+                          title="Doble clic para editar nombre"
+                        >
+                          {c.nombre} {c.apellidos}
+                        </div>
+                      )}
                       <div style={{ fontSize: '0.75rem', color: '#8A9BB0' }}>{TIPO_ICON[c.tipo]} {c.tipo}</div>
                     </td>
                     <td>
@@ -408,8 +563,88 @@ export default function Clientes() {
                       </div>
                     </td>
                     <td><span style={{ fontSize: '0.78rem' }}>{c.tipo}</span></td>
-                    <td style={{ fontSize: '0.82rem', color: '#4A5568' }}>{c.zonaInteres || '—'}</td>
-                    <td style={{ fontWeight: 600 }}>{formatMoney(c.presupuesto)}</td>
+                    <td>
+                      {(() => {
+                        const dateVal = c.fechaPrimerContacto || c.creadoEn;
+                        if (!dateVal) return <span style={{ fontSize: '0.75rem', color: '#8A9BB0' }}>—</span>;
+                        const diff = Date.now() - new Date(dateVal).getTime();
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const isStuck = days > 30 && c.estado !== 'CERRADO' && c.estado !== 'DESCARTADO';
+                        return (
+                          <span style={{ 
+                            fontSize: '0.78rem', 
+                            fontWeight: isStuck ? 600 : 400, 
+                            color: isStuck ? '#DC2626' : '#475569',
+                            background: isStuck ? '#FEE2E2' : 'transparent',
+                            padding: isStuck ? '2px 6px' : '0',
+                            borderRadius: isStuck ? '4px' : '0'
+                          }}>
+                            {days} día{days !== 1 ? 's' : ''}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {editingCell?.id === c.id && editingCell?.field === 'zonaInteres' ? (
+                        <input
+                          type="text"
+                          value={editVal}
+                          onChange={(ev) => setEditVal(ev.target.value)}
+                          onBlur={() => handleInlineSave(c.id, 'zonaInteres')}
+                          onKeyDown={(ev) => ev.key === 'Enter' && handleInlineSave(c.id, 'zonaInteres')}
+                          autoFocus
+                          className="form-input"
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.85rem' }}
+                        />
+                      ) : (
+                        <div 
+                          onDoubleClick={() => { setEditingCell({ id: c.id, field: 'zonaInteres' }); setEditVal(c.zonaInteres || ''); }}
+                          style={{ fontSize: '0.82rem', color: '#4A5568', cursor: 'text' }}
+                          title="Doble clic para editar zona"
+                        >
+                          {c.zonaInteres || '—'}
+                        </div>
+                      )}
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {editingCell?.id === c.id && editingCell?.field === 'presupuesto' ? (
+                        <input
+                          type="number"
+                          value={editVal}
+                          onChange={(ev) => setEditVal(ev.target.value)}
+                          onBlur={() => handleInlineSave(c.id, 'presupuesto')}
+                          onKeyDown={(ev) => ev.key === 'Enter' && handleInlineSave(c.id, 'presupuesto')}
+                          autoFocus
+                          className="form-input"
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.85rem', width: '100px' }}
+                        />
+                      ) : (
+                        <div 
+                          onDoubleClick={() => { setEditingCell({ id: c.id, field: 'presupuesto' }); setEditVal(c.presupuesto || ''); }}
+                          style={{ fontWeight: 600, cursor: 'text' }}
+                          title="Doble clic para editar presupuesto"
+                        >
+                          {formatMoney(c.presupuesto)}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {c.scoreIA != null ? (
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 700, 
+                          color: c.scoreIA >= 70 ? '#059669' : c.scoreIA >= 40 ? '#D97706' : '#DC2626',
+                          background: c.scoreIA >= 70 ? '#ECFDF5' : c.scoreIA >= 40 ? '#FFFBEB' : '#FEF2F2',
+                          padding: '3px 8px',
+                          borderRadius: 12,
+                          border: `1px solid ${c.scoreIA >= 70 ? '#A7F3D0' : c.scoreIA >= 40 ? '#FDE68A' : '#FCA5A5'}`
+                        }}>
+                          {c.scoreIA}%
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: '#8A9BB0' }}>—</span>
+                      )}
+                    </td>
                     <td><span className={`badge ${ESTADO_BADGE[c.estado] || ''}`}>{c.estado}</span></td>
                     <td style={{ fontSize: '0.78rem', color: '#8A9BB0' }}>{c.origen || '—'}</td>
                     <td><ChevronRight size={15} style={{ color: '#94A3B8' }} /></td>
@@ -418,6 +653,19 @@ export default function Clientes() {
               </tbody>
             </table>
           </div>
+          {data?.meta?.totalPages > 1 && (
+            <div className="pagination" style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'center', gap: '0.25rem' }}>
+              {Array.from({ length: data.meta.totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  className={`page-btn${page === i + 1 ? ' active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setPage(i + 1); }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

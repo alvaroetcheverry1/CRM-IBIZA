@@ -314,10 +314,13 @@ function adaptarParaJamesEditionJSON(propiedad, serverBaseUrl) {
  * @param {string} serverBaseUrl - URL base del servidor para construir URLs de fotos
  * @returns {Promise<Object[]>} - Array de resultados por portal
  */
-async function publicarEnPortales(propiedadId, portales, serverBaseUrl) {
+async function publicarEnPortales(propiedadId, portales, serverBaseUrl, agenciaId) {
   // Cargar propiedad completa con documentos (fotos)
-  const propiedad = await prisma.propiedad.findUnique({
-    where: { id: propiedadId, activo: true },
+  const whereProp = { id: propiedadId, activo: true };
+  if (agenciaId) whereProp.agenciaId = agenciaId;
+
+  const propiedad = await prisma.propiedad.findFirst({
+    where: whereProp,
     include: {
       propietario: { select: { nombre: true, apellidos: true, telefono: true, email: true } },
       alquilerVacacional: true,
@@ -332,13 +335,38 @@ async function publicarEnPortales(propiedadId, portales, serverBaseUrl) {
 
   if (!propiedad) throw new Error(`Propiedad ${propiedadId} no encontrada`);
 
+  const whereConfig = {};
+  if (agenciaId) whereConfig.agenciaId = agenciaId;
+  const configAgencia = await prisma.configuracionAgencia.findFirst({ where: whereConfig });
+  let tokens = {};
+  if (configAgencia && configAgencia.tokensPortales) {
+    try { tokens = JSON.parse(configAgencia.tokensPortales); } catch(e){}
+  }
+
   const resultados = [];
 
   for (const portal of portales) {
-    const config = PORTALES_CONFIG[portal];
-    if (!config) {
+    let config = { ...PORTALES_CONFIG[portal] };
+    if (!PORTALES_CONFIG[portal] && portal.startsWith('custom_')) {
+      config = {
+        nombre: 'Portal Personalizado',
+        tipo: 'xml_feed',
+        feedUrl: null,
+      };
+    }
+
+    if (!config || Object.keys(config).length === 0) {
       resultados.push({ portal, ok: false, error: `Portal desconocido: ${portal}` });
       continue;
+    }
+
+    // Override with DB config if present
+    if (tokens[portal]) {
+      if (config.tipo === 'api_rest') {
+        config.apiKey = tokens[portal];
+      } else {
+        config.feedUrl = tokens[portal];
+      }
     }
 
     // Marcar como PUBLICANDO
@@ -466,21 +494,31 @@ async function despublicarDePortales(propiedadId, portales) {
 /**
  * Obtiene el estado de publicación de una propiedad en todos los portales.
  */
-async function obtenerEstadoPublicacion(propiedadId) {
+async function obtenerEstadoPublicacion(propiedadId, agenciaId) {
   const publicaciones = await prisma.publicacionPortal.findMany({
     where: { propiedadId },
     orderBy: { actualizadoEn: 'desc' },
   });
 
-  // Construir estado completo de todos los portales (incluyendo los no configurados aún)
-  return Object.entries(PORTALES_CONFIG).map(([id, config]) => {
+  const whereConfig = {};
+  if (agenciaId) whereConfig.agenciaId = agenciaId;
+  const configAgencia = await prisma.configuracionAgencia.findFirst({ where: whereConfig });
+  let tokens = {};
+  if (configAgencia && configAgencia.tokensPortales) {
+    try { tokens = JSON.parse(configAgencia.tokensPortales); } catch(e){}
+  }
+
+  // Construir estado completo de portales estáticos
+  const estados = Object.entries(PORTALES_CONFIG).map(([id, config]) => {
     const pub = publicaciones.find(p => p.portal === id);
+    const hasApiKey = config.apiKey || (tokens[id] && config.tipo === 'api_rest');
+    
     return {
       id,
       nombre: config.nombre,
       logo: config.logo,
       tipo: config.tipo,
-      requiereCredenciales: config.tipo === 'api_rest' ? !config.apiKey : false,
+      requiereCredenciales: config.tipo === 'api_rest' ? !hasApiKey : false,
       estado: pub?.estado || 'NO_PUBLICADO',
       urlPublicacion: pub?.urlPublicacion || null,
       idExterno: pub?.idExterno || null,
@@ -489,6 +527,27 @@ async function obtenerEstadoPublicacion(propiedadId) {
       errores: pub?.errores ? JSON.parse(pub.errores) : null,
     };
   });
+
+  // Añadir estados de portales dinámicos (que ya tengan publicación o intento)
+  publicaciones.forEach(pub => {
+    if (pub.portal.startsWith('custom_') && !estados.find(e => e.id === pub.portal)) {
+      estados.push({
+        id: pub.portal,
+        nombre: 'Portal Personalizado',
+        logo: '🌐',
+        tipo: 'xml_feed',
+        requiereCredenciales: false,
+        estado: pub.estado,
+        urlPublicacion: pub.urlPublicacion || null,
+        idExterno: pub.idExterno || null,
+        ultimoSync: pub.ultimoSync || null,
+        fechaPublicacion: pub.fechaPublicacion || null,
+        errores: pub.errores ? JSON.parse(pub.errores) : null,
+      });
+    }
+  });
+
+  return estados;
 }
 
 /**
@@ -498,10 +557,12 @@ async function obtenerEstadoPublicacion(propiedadId) {
  * @param {string} portal - 'idealista' | 'fotocasa' | 'kyero'
  * @param {string} serverBaseUrl - URL base pública del servidor
  */
-async function generarFeedXML(portal, serverBaseUrl) {
-  // Obtener todas las propiedades activas marcadas para este portal
+async function generarFeedXML(portal, serverBaseUrl, agenciaId) {
+  const whereProps = { activo: true };
+  if (agenciaId) whereProps.agenciaId = agenciaId;
+
   const publicaciones = await prisma.publicacionPortal.findMany({
-    where: { portal, estado: { in: ['PUBLICADO', 'PUBLICANDO'] } },
+    where: { portal, estado: 'PUBLICADO', propiedad: whereProps },
     include: {
       propiedad: {
         include: {
@@ -526,6 +587,9 @@ async function generarFeedXML(portal, serverBaseUrl) {
     case 'kyero':
       return adaptarParaKyeroXML(propiedades, serverBaseUrl);
     default:
+      if (portal.startsWith('custom_')) {
+        return adaptarParaKyeroXML(propiedades, serverBaseUrl);
+      }
       throw new Error(`Portal ${portal} no soporta feed XML`);
   }
 }

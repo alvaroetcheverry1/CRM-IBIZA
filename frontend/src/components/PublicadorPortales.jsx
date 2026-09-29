@@ -4,9 +4,10 @@
  * Portales: Idealista, Fotocasa, James Edition, Kyero
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, Radio, RefreshCw, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAgency } from '../context/AgencyContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -147,15 +148,16 @@ function PortalCard({ portalId, meta, estadoActual, seleccionado, onToggle }) {
 }
 
 // ─── Panel de info del feed ──────────────────────────────────────────────────
-function FeedInfoPanel({ propiedadId }) {
+function FeedInfoPanel({ propiedadId, todosLosPortales }) {
   const [expanded, setExpanded] = useState(false);
   const serverBase = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
 
-  const feedUrls = {
-    idealista: `${serverBase}/api/portales/feed?portal=idealista`,
-    fotocasa:  `${serverBase}/api/portales/feed?portal=fotocasa`,
-    kyero:     `${serverBase}/api/portales/feed?portal=kyero`,
-  };
+  const feedUrls = Object.keys(todosLosPortales)
+    .filter(id => id !== 'james_edition') // James Edition is REST API
+    .reduce((acc, id) => {
+      acc[id] = `${serverBase}/api/portales/feed?portal=${id}`;
+      return acc;
+    }, {});
 
   return (
     <div style={{ background: '#F0F7FF', border: '1px solid #BAD4F0', borderRadius: 10, padding: '0.75rem 1rem', marginTop: '1rem' }}>
@@ -201,11 +203,38 @@ function FeedInfoPanel({ propiedadId }) {
 
 // ─── Modal principal ─────────────────────────────────────────────────────────
 export default function PublicadorPortales({ propiedad, onClose }) {
+  const { config } = useAgency();
   const [estados, setEstados] = useState([]);
   const [seleccionados, setSeleccionados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [publicando, setPublicando] = useState(false);
   const [despublicando, setDespublicando] = useState(false);
+
+  // Combine static portals with custom portals from config
+  const todosLosPortales = useMemo(() => {
+    let custom = {};
+    if (config?.tokensPortales) {
+      try {
+        const parsed = JSON.parse(config.tokensPortales);
+        if (Array.isArray(parsed.customPortals)) {
+          parsed.customPortals.forEach(cp => {
+            if (cp.nombre) {
+              custom[cp.id || `custom_${cp.nombre}`] = {
+                nombre: cp.nombre,
+                emoji: '🌐',
+                color: '#6366F1',
+                bgColor: '#EEF2FF',
+                borderColor: '#C7D2FE',
+                descripcion: 'Portal Personalizado · Feed XML',
+                url: cp.url || '#'
+              };
+            }
+          });
+        }
+      } catch(e) {}
+    }
+    return { ...PORTALES_META, ...custom };
+  }, [config]);
 
   const cargarEstados = useCallback(async () => {
     try {
@@ -218,8 +247,8 @@ export default function PublicadorPortales({ propiedad, onClose }) {
     } catch (err) {
       console.error('[PublicadorPortales] Error cargando estados:', err);
       // Fallback: estados vacíos
-      setEstados(Object.keys(PORTALES_META).map(id => ({
-        id, nombre: PORTALES_META[id].nombre, estado: 'NO_PUBLICADO',
+      setEstados(Object.keys(todosLosPortales).map(id => ({
+        id, nombre: todosLosPortales[id]?.nombre, estado: 'NO_PUBLICADO',
         urlPublicacion: null, idExterno: null, ultimoSync: null, errores: null,
       })));
     } finally {
@@ -263,7 +292,7 @@ export default function PublicadorPortales({ propiedad, onClose }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al publicar');
 
-      toast.success(`🚀 Publicando en ${seleccionados.map(id => PORTALES_META[id]?.nombre).join(', ')}…`);
+      toast.success(`🚀 Publicando en ${seleccionados.map(id => todosLosPortales[id]?.nombre || id).join(', ')}…`);
       setSeleccionados([]);
 
       // Recargar estados después de 1s para que los que ya terminaron aparezcan
@@ -281,7 +310,7 @@ export default function PublicadorPortales({ propiedad, onClose }) {
       toast.error('No hay portales publicados para despublicar');
       return;
     }
-    if (!window.confirm(`¿Despublicar de ${publicados.map(id => PORTALES_META[id]?.nombre || id).join(', ')}?`)) return;
+    if (!window.confirm(`¿Despublicar de ${publicados.map(id => todosLosPortales[id]?.nombre || id).join(', ')}?`)) return;
     setDespublicando(true);
     try {
       const res = await fetch(`${API_BASE}/portales/despublicar`, {
@@ -423,7 +452,7 @@ export default function PublicadorPortales({ propiedad, onClose }) {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-              {Object.entries(PORTALES_META).map(([id, meta]) => {
+              {Object.entries(todosLosPortales).map(([id, meta]) => {
                 const estadoActual = estados.find(e => e.id === id);
                 return (
                   <PortalCard
@@ -448,7 +477,7 @@ export default function PublicadorPortales({ propiedad, onClose }) {
               fontSize: '0.78rem', color: '#1E40AF',
             }}>
               <strong>{seleccionados.length} portal{seleccionados.length > 1 ? 'es' : ''} seleccionado{seleccionados.length > 1 ? 's' : ''}:</strong>{' '}
-              {seleccionados.map(id => PORTALES_META[id]?.nombre).join(', ')}
+              {seleccionados.map(id => todosLosPortales[id]?.nombre || id).join(', ')}
             </div>
           )}
 
@@ -467,7 +496,7 @@ export default function PublicadorPortales({ propiedad, onClose }) {
           )}
 
           {/* Panel info feeds */}
-          <FeedInfoPanel propiedadId={propiedad.id} />
+          <FeedInfoPanel propiedadId={propiedad.id} todosLosPortales={todosLosPortales} />
         </div>
 
         {/* Footer con acciones */}

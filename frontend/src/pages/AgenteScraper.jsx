@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { clientesApi } from '../services/api';
+import { clientesApi, propiedadesApi } from '../services/api';
 import { 
   Bot, Radar, Search, Play, Pause, Globe, CheckCircle2, 
   MapPin, SlidersHorizontal, ArrowRight, DownloadCloud, Loader2, DollarSign, Home
@@ -127,28 +127,56 @@ export default function AgenteScraper() {
     }
   };
 
-  const importMutation = useMutation({
+  const importPropMutation = useMutation({
+    mutationFn: (prop) => propiedadesApi.create({
+      nombre: prop.nombre,
+      descripcion: prop.descripcion,
+      tipo: prop.tipo,
+      estado: 'DISPONIBLE',
+      zona: prop.zona,
+      habitaciones: prop.habitaciones,
+      metrosCuadrados: prop.metrosCuadrados,
+      notas: `Propiedad importada desde Scraper. URL Original: ${prop.origenUrl}`
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['propiedades'] });
+    }
+  });
+
+  const importLeadMutation = useMutation({
     mutationFn: (lead) => clientesApi.create({
-      nombre: lead.nombre,
-      apellidos: lead.apellidos,
-      email: lead.email,
-      telefono: lead.telefono,
-      tipo: lead.tipo,
+      nombre: `Propietario de: ${lead.nombre.substring(0, 40)}`,
+      apellidos: '',
+      tipo: 'VENDEDOR',
       estado: 'NUEVO',
-      origen: lead.origen,
-      presupuesto: lead.presupuesto || 0,
-      zonaInteres: lead.zonaInteres
+      origen: 'Extracción Scraper',
+      presupuesto: lead.precioEstimado || 0,
+      zonaInteres: lead.zona,
+      notas: `Lead Vendedor detectado por el Agente Captador.\nPropiedad: ${lead.nombre}\nPrecio estimado: ${lead.precioEstimado?.toLocaleString('es-ES')}€\nURL Origen: ${lead.origenUrl}\nDescripción: ${lead.descripcion}`
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
     }
   });
 
-  const handleImport = async (lead) => {
+  const handleImportProp = async (prop) => {
+    setImportingId(prop.id);
+    try {
+      await importPropMutation.mutateAsync(prop);
+      toast.success(`Propiedad "${prop.nombre}" importada`);
+      setResults(prev => prev.filter(r => r.id !== prop.id));
+    } catch (error) {
+      toast.error('Error importando propiedad');
+    } finally {
+      setImportingId(null);
+    }
+  };
+
+  const handleImportLead = async (lead) => {
     setImportingId(lead.id);
     try {
-      await importMutation.mutateAsync(lead);
-      toast.success(`${lead.nombre} importado al CRM`);
+      await importLeadMutation.mutateAsync(lead);
+      toast.success(`Lead (Propietario) importado`);
       setResults(prev => prev.filter(r => r.id !== lead.id));
     } catch (error) {
       toast.error('Error importando lead');
@@ -157,9 +185,9 @@ export default function AgenteScraper() {
     }
   };
 
-  const handleImportAll = async () => {
-    for (let lead of results) {
-      await handleImport(lead);
+  const handleImportAllProps = async () => {
+    for (let item of results) {
+      await handleImportProp(item);
       await new Promise(r => setTimeout(r, 400));
     }
   };
@@ -342,43 +370,52 @@ export default function AgenteScraper() {
           {results.length > 0 && (
             <div className="card" style={{ padding: '1.5rem', animation: 'fadeIn 0.5s ease-out' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, color: '#1A3A5C', fontSize: '1.1rem' }}>Perfiles Extraídos ({results.length})</h3>
+                <h3 style={{ margin: 0, color: '#1A3A5C', fontSize: '1.1rem' }}>Propiedades Extraídas ({results.length})</h3>
                 <button 
-                  onClick={handleImportAll} 
+                  onClick={handleImportAllProps} 
                   className="btn btn-outline btn-sm"
                   style={{ color: '#1A3A5C', borderColor: '#1A3A5C' }}
                 >
-                  <DownloadCloud size={14} /> Importar Todos
+                  <DownloadCloud size={14} /> Importar Todo como Propiedad
                 </button>
               </div>
 
               <div style={{ display: 'grid', gap: '1rem' }}>
-                {results.map(lead => (
-                  <div key={lead.id} style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: '1rem', background: '#F8FAFC', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ width: 40, height: 40, background: '#1A3A5C', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
-                      {lead.nombre ? lead.nombre[0] : '?'}
+                {results.map(prop => (
+                  <div key={prop.id} style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: '1rem', background: '#F8FAFC', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ width: 40, height: 40, background: '#1A3A5C', borderRadius: '8px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                      <Home size={20} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>{lead.nombre} {lead.apellidos}</div>
-                        <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, background: '#E2E8F0', color: '#475569', fontWeight: 600 }}>{lead.origen}</span>
+                        <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>{prop.nombre}</div>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, background: '#E2E8F0', color: '#475569', fontWeight: 600 }}>{prop.zona}</span>
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#64748B', display: 'flex', gap: '1rem', marginBottom: 6 }}>
-                        <span>📱 {lead.telefono || 'Sin teléfono'}</span>
-                        <span>✉️ {lead.email || 'Sin email'}</span>
+                        <span>💰 {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(prop.precioEstimado)}</span>
+                        <span>🛏️ {prop.habitaciones} habs.</span>
+                        <span>📏 {prop.metrosCuadrados} m²</span>
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#1A3A5C', background: '#EFF6FF', padding: '6px 10px', borderRadius: 4, fontStyle: 'italic' }}>
-                        {lead.comentarios}
+                      <div style={{ fontSize: '0.8rem', color: '#1A3A5C', background: '#EFF6FF', padding: '6px 10px', borderRadius: 4, fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {prop.descripcion}
                       </div>
                     </div>
-                    <div style={{ borderLeft: '1px solid #E2E8F0', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ borderLeft: '1px solid #E2E8F0', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '180px' }}>
                       <button 
-                        onClick={() => handleImport(lead)}
-                        disabled={importingId === lead.id}
+                        onClick={() => handleImportProp(prop)}
+                        disabled={importingId === prop.id}
                         className="btn btn-primary"
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}
+                        style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}
                       >
-                        {importingId === lead.id ? <Loader2 size={14} className="spin" /> : <ArrowRight size={14} />} Importar
+                        {importingId === prop.id ? <Loader2 size={14} className="spin" /> : <Home size={14} />} Guardar Propiedad
+                      </button>
+                      <button 
+                        onClick={() => handleImportLead(prop)}
+                        disabled={importingId === prop.id}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, width: '100%', background: '#F1F5F9', color: '#1E293B', borderColor: '#CBD5E1' }}
+                      >
+                        {importingId === prop.id ? <Loader2 size={14} className="spin" /> : <Bot size={14} />} Guardar Lead Vendedor
                       </button>
                     </div>
                   </div>

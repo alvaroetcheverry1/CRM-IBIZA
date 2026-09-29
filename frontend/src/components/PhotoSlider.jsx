@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, ImagePlus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImagePlus, Trash2, Star } from 'lucide-react';
 
 // Base del backend — necesario para resolver URLs relativas /api/uploads/...
 const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
@@ -26,13 +26,14 @@ function getFotoSrc(foto) {
 }
 
 
-export default function PhotoSlider({ fotos = [], onAddPhotos, onDeletePhoto }) {
+export default function PhotoSlider({ fotos = [], fotoPrincipal = '', onAddPhotos, onDeletePhoto, onSetMainPhoto }) {
   const [idx, setIdx] = useState(0);
 
   const prev = () => setIdx(i => (i - 1 + fotos.length) % fotos.length);
   const next = () => setIdx(i => (i + 1) % fotos.length);
 
   const fotoActual = fotos[idx];
+  const isMain = fotoActual && (fotoActual.urlDrive === fotoPrincipal || fotoActual.url === fotoPrincipal || (fotoPrincipal && (fotoActual.urlDrive?.endsWith(fotoPrincipal) || fotoActual.url?.endsWith(fotoPrincipal))));
   const src = getFotoSrc(fotoActual);
 
   return (
@@ -103,6 +104,29 @@ export default function PhotoSlider({ fotos = [], onAddPhotos, onDeletePhoto }) 
       {/* Botones top-right */}
       {fotos.length > 0 && (
         <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+          {onSetMainPhoto && fotoActual && (
+            <button
+              onClick={() => onSetMainPhoto(fotoActual.urlDrive || fotoActual.url)}
+              style={{ 
+                background: isMain ? 'rgba(201, 168, 76, 0.95)' : 'rgba(0, 0, 0, 0.55)', 
+                border: '1px solid rgba(255,255,255,0.3)', 
+                borderRadius: 8, 
+                color: 'white', 
+                padding: '6px 10px', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 6, 
+                fontSize: '0.78rem', 
+                fontWeight: 600, 
+                backdropFilter: 'blur(4px)',
+                transition: 'background 0.2s'
+              }}
+              title={isMain ? "Foto de portada actual" : "Establecer como foto de portada"}
+            >
+              <Star size={13} fill={isMain ? "white" : "none"} />
+            </button>
+          )}
           {onDeletePhoto && fotoActual?.id && (
             <button
               onClick={() => onDeletePhoto(fotoActual.id)}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
 import { Building2, Users, UserCheck, TrendingUp, Calendar, AlertTriangle, Trophy, Target } from 'lucide-react';
+import LeadsAlert from '../components/LeadsAlert';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend
@@ -73,6 +74,8 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* ─── Alerta de leads sin contactar ─────────────────── */}
+      <LeadsAlert />
 
       {/* ─── KPI Row 1 ─────────────────────────────────────── */}
       <div className="kpi-grid section-gap">
@@ -124,6 +127,31 @@ export default function Dashboard() {
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{kpis.tasaConversion ?? 0}%</div>
             <div style={{ fontSize: '0.78rem', opacity: 0.8, marginTop: 2 }}>Tasa de Conversión de Leads</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── KPI Row 3 (Adicionales) ───────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+        <div className="kpi-card">
+          <div className="kpi-icon blue"><Calendar size={20} /></div>
+          <div>
+            <div className="kpi-value">{kpis.ocupacionVacacional ?? 0}%</div>
+            <div className="kpi-label">Ocupación Vacacional (Año)</div>
+          </div>
+        </div>
+        <div className="kpi-card gold">
+          <div className="kpi-icon gold"><TrendingUp size={20} /></div>
+          <div>
+            <div className="kpi-value">{kpis.rentabilidadMedia ?? 0}%</div>
+            <div className="kpi-label">Rentabilidad Media Portfolio</div>
+          </div>
+        </div>
+        <div className="kpi-card navy">
+          <div className="kpi-icon navy"><Trophy size={20} /></div>
+          <div>
+            <div className="kpi-value">{kpis.tiempoMedioVenta ?? 0} días</div>
+            <div className="kpi-label">Tiempo Medio de Venta</div>
           </div>
         </div>
       </div>

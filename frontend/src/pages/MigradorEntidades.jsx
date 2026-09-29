@@ -32,7 +32,7 @@ const MAPPABLE_FIELDS = [
 ];
 
 export default function MigradorEntidades() {
-  const [step, setStep] = useState('choice'); // choice, mapping, processing, finished
+  const [step, setStep] = useState('choice'); // choice, mapping, processing_prep, processing, finished
   const [method, setMethod] = useState(null); // csv, drive, folder
   
   // CSV State
@@ -112,10 +112,9 @@ export default function MigradorEntidades() {
       const dossier = files.find(f => f.name.toLowerCase().endsWith('.pdf'));
       const photos = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f.name));
 
-      setLogs(prev => [`🔍 Escaneando inteligencia para: ${folderName}...`, ...prev]);
+      setLogs(prev => [`Escaneando inteligencia para: ${folderName}...`, ...prev]);
 
       try {
-        // Inicializar con defaults seguros para los campos requeridos por Prisma
         let propertyData = { 
           nombre: folderName, 
           tipo: 'VENTA',
@@ -137,7 +136,6 @@ export default function MigradorEntidades() {
           if (resAnalisis.ok) {
             const result = await resAnalisis.json();
             propertyData = { ...propertyData, ...result.datos };
-            // Asegurarse de que si result.datos trae algún require vacío re-aplicar defaults
             if (!propertyData.zona) propertyData.zona = 'No especificada';
             if (!propertyData.habitaciones) propertyData.habitaciones = 0;
             if (!propertyData.banos) propertyData.banos = 0;
@@ -157,7 +155,6 @@ export default function MigradorEntidades() {
 
         if (!resCreate.ok) {
           const errData = await resCreate.json().catch(() => ({}));
-          console.error(`Error backend [${folderName}]:`, errData);
           throw new Error(errData.message || errData.error || `Error creando ${folderName}`);
         }
         
@@ -165,7 +162,7 @@ export default function MigradorEntidades() {
 
         // 3. Subir fotos
         if (photos.length > 0) {
-          setLogs(prev => [`📸 Sincronizando ${photos.length} fotos alta res para ${folderName}...`, ...prev]);
+          setLogs(prev => [`Sincronizando ${photos.length} fotos para ${folderName}...`, ...prev]);
           for (const photo of photos) {
             const photoFormData = new FormData();
             photoFormData.append('file', photo);
@@ -177,7 +174,7 @@ export default function MigradorEntidades() {
           }
         }
 
-        setLogs(prev => [`✨ Operación exitosa: ${folderName}`, ...prev]);
+        setLogs(prev => [`Operación exitosa: ${folderName}`, ...prev]);
       } catch (err) {
         setErrors(prev => [...prev, `${folderName}: ${err.message}`]);
       }
@@ -187,7 +184,7 @@ export default function MigradorEntidades() {
     }
 
     setStep('finished');
-    toast.success('Entramado de carpetas sincronizado con el CRM');
+    toast.success('Carpetas sincronizadas exitosamente');
   };
 
   const startMigration = async () => {
@@ -221,7 +218,7 @@ export default function MigradorEntidades() {
         if (!res.ok) throw new Error('Cruce de datos fallido');
         
         const created = await res.json();
-        setLogs(prev => [`✅ Archivo procesado: ${propertyData.nombre || 'Anon'} (${created.referencia})`, ...prev].slice(0, 50));
+        setLogs(prev => [`Archivo procesado: ${propertyData.nombre || 'Anon'} (${created.referencia})`, ...prev].slice(0, 50));
       } catch (err) {
         setErrors(prev => [...prev, `${propertyData.nombre || 'Fila ' + (i+1)}: ${err.message}`]);
       }
@@ -231,14 +228,14 @@ export default function MigradorEntidades() {
     }
 
     setStep('finished');
-    toast.success('Matrix de datos construida');
+    toast.success('Importación finalizada');
   };
 
   // ── DRIVE HANDLERS ───────────────────────────────────────────────────────
   const startDriveMigration = async () => {
     if (!driveFolderId) return toast.error('Ingresa un ID de Google Drive válido');
     setStep('processing');
-    setLogs([`🚀 Estableciendo conexión segura con Google Drive (ID: ${driveFolderId})...`]);
+    setLogs([`Estableciendo conexión segura con Google Drive...`]);
     setErrors([]);
     
     try {
@@ -251,10 +248,10 @@ export default function MigradorEntidades() {
         body: JSON.stringify({ folderId: driveFolderId })
       });
 
-      if (!res.ok) throw new Error('Intercepción rechazada en Node/Drive');
+      if (!res.ok) throw new Error('Intercepción rechazada');
       
       const result = await res.json();
-      setLogs(prev => [`📊 Balance: ${result.processed} entidades generadas, ${result.errors} bloqueos.`, ...prev]);
+      setLogs(prev => [`Balance: ${result.processed} propiedades creadas, ${result.errors} fallos.`, ...prev]);
     } catch (err) {
       setErrors(prev => [err.message]);
     }
@@ -263,75 +260,58 @@ export default function MigradorEntidades() {
   };
 
   return (
-    <div className="p-10 max-w-6xl mx-auto min-h-screen bg-black/40 rounded-3xl border border-gray-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden my-6">
-      <div className="absolute top-0 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      <header className="mb-14 text-center relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-800/50 border border-gray-700/50 rounded-full text-gray-400 text-xs tracking-widest uppercase mb-6 shadow-sm">
-          <Sparkles size={14} className="text-amber-400" /> Ibiza Luxury System
-        </div>
-        <h1 className="text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500 tracking-tight">
-          Data Migration Wizard
-        </h1>
-        <p className="text-gray-400 text-lg font-light max-w-2xl mx-auto leading-relaxed">
-          Transfiere tu catálogo inmobiliario al ecosistema Inteligente a través de bases CSV, arquitecturas de carpetas o puentes directos con Google Drive.
+    <div className="page-content" style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1rem' }}>
+      <header className="page-header" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '3rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>
+          Importación de Catálogo
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', fontSize: '1.1rem' }}>
+          Transfiere tu inventario inmobiliario al sistema inteligente de manera rápida. Selecciona el formato de origen de tus datos.
         </p>
       </header>
 
       {/* ── STEP: CHOICE ─────────────────────────────────────────────────── */}
       {step === 'choice' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
           
-          <label className="group relative bg-[#121212] border border-gray-800/80 rounded-3xl p-8 hover:border-blue-500/50 hover:bg-[#1a1a1b] hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-300 cursor-pointer flex flex-col items-center text-center overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <input type="file" accept=".csv" onChange={handleCsvUpload} className="hidden" />
-            
-            <div className="bg-blue-500/10 border border-blue-500/20 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <FileSpreadsheet className="text-blue-400 w-10 h-10" strokeWidth={1.5} />
+          <label className="card" style={{ cursor: 'pointer', textAlign: 'center', padding: '40px 20px', transition: 'all 0.3s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input type="file" accept=".csv" onChange={handleCsvUpload} style={{ display: 'none' }} />
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--info-bg)', color: 'var(--info)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+              <FileSpreadsheet size={36} strokeWidth={1.5} />
             </div>
-            
-            <h3 className="text-2xl font-bold mb-3 text-white tracking-tight">Archivo CSV</h3>
-            <p className="text-gray-500 text-sm font-medium leading-relaxed">
-              Formato universal. Ideal para bases exportadas desde Kyero, Idealista, Inmoenter o tu Excel interno.
+            <h3 style={{ fontSize: '1.4rem', color: 'var(--text-primary)', marginBottom: '12px' }}>Base de Datos CSV</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+              Sube un archivo CSV exportado desde otro CRM (Kyero, Idealista, etc.) o desde tu propio Excel.
             </p>
           </label>
 
-          <label className="group relative bg-[#121212] border border-gray-800/80 rounded-3xl p-8 hover:border-emerald-500/50 hover:bg-[#1a1a1b] hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 cursor-pointer flex flex-col items-center text-center overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            {/* HTML Attribute webkitdirectory enables folder upload on all modern webkit/chromium browsers */}
-            <input type="file" webkitdirectory="" onChange={handleFolderUpload} className="hidden" />
-            
-            <div className="bg-emerald-500/10 border border-emerald-500/20 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-              <FolderSearch className="text-emerald-400 w-10 h-10" strokeWidth={1.5} />
+          <label className="card" style={{ cursor: 'pointer', textAlign: 'center', padding: '40px 20px', transition: 'all 0.3s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input type="file" webkitdirectory="" onChange={handleFolderUpload} style={{ display: 'none' }} />
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--success-bg)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+              <FolderSearch size={36} strokeWidth={1.5} />
             </div>
-            
-            <h3 className="text-2xl font-bold mb-3 text-white tracking-tight">Carpeta Local</h3>
-            <p className="text-gray-500 text-sm font-medium leading-relaxed">
-              Analizaremos recursivamente PDFs como dossiers y cargaremos imágenes en alta resolución automáticamente.
+            <h3 style={{ fontSize: '1.4rem', color: 'var(--text-primary)', marginBottom: '12px' }}>Carpeta Local</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+              Sube una carpeta que contenga subcarpetas por propiedad con sus fotos y PDFs. Extraeremos los datos con IA.
             </p>
           </label>
 
-          <div className="group relative bg-[#121212] border border-gray-800/80 rounded-3xl p-8 hover:border-amber-500/50 hover:bg-[#1a1a1b] hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] transition-all duration-300 flex flex-col items-center text-center overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            <div className="bg-amber-500/10 border border-amber-500/20 w-20 h-20 rounded-2xl flex items-center justify-center mb-6">
-              <Cloud className="text-amber-400 w-10 h-10" strokeWidth={1.5} />
+          <div className="card" style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--warning-bg)', color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+              <Cloud size={36} strokeWidth={1.5} />
             </div>
-            
-            <h3 className="text-2xl font-bold mb-3 text-white tracking-tight">Google Drive</h3>
-            <p className="text-gray-500 text-sm font-medium leading-relaxed mb-6">
-              Conexión en la nube. Introduce la URL o ID del directorio raíz que agrupa tus propiedades.
+            <h3 style={{ fontSize: '1.4rem', color: 'var(--text-primary)', marginBottom: '12px' }}>Google Drive</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '20px' }}>
+              Conecta directamente con la carpeta de Drive donde almacenas las propiedades.
             </p>
             
-            <div className="w-full relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                <LinkIcon size={16} />
-              </div>
+            <div style={{ width: '100%', position: 'relative', marginBottom: '15px' }}>
+              <LinkIcon size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input 
                 type="text" 
                 placeholder="ID o URL de la Carpeta" 
-                className="w-full bg-black/60 border border-gray-700/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all outline-none"
+                className="form-input"
+                style={{ paddingLeft: '38px', width: '100%' }}
                 value={driveFolderId}
                 onChange={(e) => {
                   let val = e.target.value;
@@ -345,9 +325,10 @@ export default function MigradorEntidades() {
             <button 
               onClick={startDriveMigration}
               disabled={!driveFolderId}
-              className="mt-4 w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:hover:bg-amber-600 disabled:cursor-not-allowed py-3 rounded-xl text-sm font-semibold tracking-wide transition-all shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2"
+              className="btn btn-primary w-100"
+              style={{ justifyContent: 'center' }}
             >
-              Iniciar Pasarela <ArrowRight size={16} />
+              Conectar e Importar <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -355,32 +336,32 @@ export default function MigradorEntidades() {
 
       {/* ── STEP: PROCESSING PREP (Confirmación carpetas) ────────────────── */}
       {step === 'processing_prep' && (
-        <div className="bg-[#121212] rounded-3xl p-10 border border-emerald-900/30 shadow-2xl animate-in zoom-in-95 duration-300 relative z-10 max-w-2xl mx-auto">
-          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
-            <FolderSearch className="text-emerald-400 w-8 h-8" />
+        <div className="card" style={{ maxWidth: '700px', margin: '0 auto', padding: '40px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--success-bg)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <FolderSearch size={32} />
+            </div>
+            <h2 style={{ fontSize: '2rem', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', marginBottom: '10px' }}>
+              Estructura Analizada
+            </h2>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Hemos detectado <strong>{Object.keys(folderGroups).length} carpetas</strong> de propiedades. El sistema extraerá los datos críticos mediante IA y sincronizará las fotos.
+            </p>
           </div>
-          
-          <h2 className="text-3xl font-extrabold mb-4 tracking-tight">
-            Análisis de Estructura Listo
-          </h2>
-          <p className="text-gray-400 mb-8 font-light text-lg">
-            El motor ha mapeado <strong className="text-white">{Object.keys(folderGroups).length} directorios</strong> de propiedades. 
-            El CRM Inteligente extraerá los datos críticos mediante IA y sincronizará todo el material gráfico.
-          </p>
 
-          <div className="max-h-64 overflow-y-auto mb-10 border border-gray-800/80 rounded-2xl p-2 bg-black/40 fancy-scrollbar">
+          <div style={{ maxHeight: '250px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px', marginBottom: '30px', background: 'var(--bg-primary)' }}>
             {Object.keys(folderGroups).map(name => (
-              <div key={name} className="flex items-center justify-between px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/30 rounded-xl transition-colors last:border-0 group">
-                <span className="text-gray-200 font-medium group-hover:text-emerald-400 transition-colors">{name}</span>
-                <span className="text-xs font-mono bg-gray-900 px-3 py-1 rounded-full text-gray-400 border border-gray-800">{folderGroups[name].length} assets</span>
+              <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid var(--border-light)' }}>
+                <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{name}</span>
+                <span className="badge" style={{ background: 'var(--bg-secondary)' }}>{folderGroups[name].length} archivos</span>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-end gap-4">
-            <button onClick={() => setStep('choice')} className="px-6 py-3 rounded-xl text-gray-400 font-medium hover:text-white hover:bg-gray-800 transition-all">Abortar</button>
-            <button onClick={startFolderMigration} className="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-900/30 flex items-center gap-2 transition-all hover:-translate-y-0.5">
-              Ejecutar Extracción <ChevronRight size={18} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
+            <button onClick={() => setStep('choice')} className="btn btn-secondary">Cancelar</button>
+            <button onClick={startFolderMigration} className="btn btn-primary">
+              Comenzar Importación <ChevronRight size={18} />
             </button>
           </div>
         </div>
@@ -388,61 +369,50 @@ export default function MigradorEntidades() {
 
       {/* ── STEP: MAPPING ────────────────────────────────────────────────── */}
       {step === 'mapping' && (
-        <div className="bg-[#121212] rounded-3xl p-10 border border-blue-900/30 shadow-2xl animate-in zoom-in-95 duration-300 relative z-10 max-w-4xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center">
-                <Database className="text-blue-400 w-6 h-6" />
+        <div className="card" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--info-bg)', color: 'var(--info)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Database size={24} />
               </div>
               <div>
-                <h2 className="text-2xl font-extrabold tracking-tight">Ingeniería de Datos</h2>
-                <p className="text-gray-400 text-sm">Emparejamiento de nodos CSV</p>
+                <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', margin: 0 }}>Mapeo de Columnas</h2>
+                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Empareja las columnas de tu CSV con los campos del CRM</p>
               </div>
             </div>
-            <div className="bg-blue-950/40 border border-blue-900/50 px-4 py-2 rounded-full text-sm text-blue-300 font-mono flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              {csvData.length} records detected
+            <div className="badge" style={{ background: 'var(--bg-primary)', fontSize: '1rem', padding: '8px 16px' }}>
+              {csvData.length} filas detectadas
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-10 bg-black/30 p-8 rounded-3xl border border-gray-800/50">
+          <div className="form-grid" style={{ marginBottom: '30px' }}>
             {MAPPABLE_FIELDS.map(field => (
-              <div key={field.id} className="flex flex-col gap-2 group">
-                <label className="text-sm font-semibold text-gray-300 flex items-center gap-2 group-hover:text-blue-400 transition-colors">
-                  {field.label} {field.required && <span className="text-red-400 text-xs px-2 py-0.5 bg-red-950/50 rounded-full border border-red-900/30">KEY</span>}
+              <div key={field.id} className="form-group">
+                <label className={`form-label ${field.required ? 'required' : ''}`}>
+                  {field.label}
                 </label>
-                <div className="relative">
-                  <select 
-                    className="w-full bg-[#0a0a0a] border border-gray-800 rounded-xl px-4 py-3 text-gray-200 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none appearance-none transition-all cursor-pointer hover:border-gray-700"
-                    value={mapping[field.id] || ''}
-                    onChange={(e) => setMapping(prev => ({ ...prev, [field.id]: e.target.value }))}
-                  >
-                    <option value="" className="text-gray-600">-- Ignorar Nodo --</option>
-                    {csvHeaders.map(h => (
-                      <option key={h} value={h} className="text-white">{h}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-600">
-                    <ChevronRight size={16} className="rotate-90" />
-                  </div>
-                </div>
+                <select 
+                  className="form-input"
+                  value={mapping[field.id] || ''}
+                  onChange={(e) => setMapping(prev => ({ ...prev, [field.id]: e.target.value }))}
+                >
+                  <option value="">-- Ignorar este campo --</option>
+                  {csvHeaders.map(h => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-end gap-4 border-t border-gray-800/50 pt-8 mt-4">
-            <button 
-              onClick={() => setStep('choice')}
-              className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-            >
-              Abortar
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+            <button onClick={() => setStep('choice')} className="btn btn-secondary">Cancelar</button>
             <button 
               onClick={startMigration}
               disabled={!mapping.nombre || !mapping.tipo}
-              className="px-10 py-3 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 disabled:cursor-not-allowed shadow-lg shadow-blue-900/30 transition-all flex items-center gap-2 hover:-translate-y-0.5"
+              className="btn btn-primary"
             >
-              Inicializar Transferencia <ArrowRight size={18} />
+              Importar Datos <ArrowRight size={18} />
             </button>
           </div>
         </div>
@@ -450,43 +420,41 @@ export default function MigradorEntidades() {
 
       {/* ── STEP: PROCESSING ─────────────────────────────────────────────── */}
       {step === 'processing' && (
-        <div className="bg-[#121212] rounded-3xl p-12 border border-gray-800 shadow-2xl relative z-10 max-w-3xl mx-auto text-center animate-in zoom-in-95 duration-500">
-          <div className="relative w-24 h-24 mx-auto mb-10">
-            <div className="absolute inset-0 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin" />
-            <div className="absolute inset-2 border-b-2 border-l-2 border-emerald-500 rounded-full animate-[spin_1.5s_linear_reverse]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="text-white w-8 h-8 animate-pulse" />
-            </div>
+        <div className="card" style={{ maxWidth: '700px', margin: '0 auto', padding: '50px 40px', textAlign: 'center' }}>
+          <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center' }}>
+            <Loader2 size={48} className="spin" style={{ color: 'var(--primary)' }} />
           </div>
           
-          <h2 className="text-4xl font-black mb-3 tracking-tight">Sintetizando Datos</h2>
-          <p className="text-gray-400 mb-10 font-light">
-            No recargues la página. Estableciendo conexiones inter-dimensionales con el core.
+          <h2 style={{ fontSize: '2rem', fontFamily: 'var(--font-serif)', color: 'var(--text-primary)', marginBottom: '10px' }}>Procesando Importación</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '40px' }}>
+            Por favor, no cierres esta ventana. Estamos importando los datos al sistema central.
           </p>
           
-          <div className="w-full bg-black/60 rounded-full h-3 mb-4 relative overflow-hidden border border-gray-800/50 p-0.5">
+          <div style={{ width: '100%', background: 'var(--bg-primary)', borderRadius: '10px', height: '8px', marginBottom: '15px', overflow: 'hidden' }}>
             <div 
-              className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)] relative"
-              style={{ width: `${(progress.current / (progress.total || 1)) * 100}%` }}
-            >
-              <div className="absolute inset-0 bg-white/20 animate-[pulse_1s_ease-in-out_infinite]" />
-            </div>
+              style={{ 
+                height: '100%', 
+                background: 'var(--primary)', 
+                width: `${(progress.current / (progress.total || 1)) * 100}%`,
+                transition: 'width 0.3s ease'
+              }} 
+            />
           </div>
           
-          <div className="flex justify-between text-xs text-gray-500 mb-12 font-mono uppercase tracking-widest">
-            <span>{progress.current} / {progress.total} Assets</span>
-            <span className="text-blue-400">{Math.round((progress.current / (progress.total || 1)) * 100)}% Completado</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '40px', fontWeight: '500' }}>
+            <span>{progress.current} / {progress.total} Registros</span>
+            <span>{Math.round((progress.current / (progress.total || 1)) * 100)}% Completado</span>
           </div>
 
-          <div className="bg-black/60 rounded-2xl p-6 h-72 overflow-y-auto text-left font-mono text-[11px] border border-gray-800/50 fancy-scrollbar leading-relaxed">
+          <div style={{ background: 'var(--bg-primary)', borderRadius: '8px', padding: '20px', height: '200px', overflowY: 'auto', textAlign: 'left', fontSize: '0.85rem', fontFamily: 'monospace', border: '1px solid var(--border)' }}>
             {logs.map((log, i) => (
-              <div key={i} className="mb-3 last:mb-0 pb-3 border-b border-gray-900/50 text-gray-300">
-                <span className="text-blue-500 mr-2">{'>'}</span> {log}
+              <div key={i} style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--primary)', marginRight: '8px' }}>{'>'}</span> {log}
               </div>
             ))}
             {errors.map((error, i) => (
-              <div key={i} className="text-red-400 mb-3 border-b border-red-900/20 pb-3 flex items-start gap-2 bg-red-950/20 p-3 rounded-lg">
-                <AlertCircle size={14} className="mt-0.5 shrink-0" /> <span className="break-words">{error}</span>
+              <div key={i} style={{ color: 'var(--danger)', marginBottom: '8px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                <AlertCircle size={14} style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{error}</span>
               </div>
             ))}
           </div>
@@ -495,28 +463,23 @@ export default function MigradorEntidades() {
 
       {/* ── STEP: FINISHED ──────────────────────────────────────────────── */}
       {step === 'finished' && (
-        <div className="bg-[#121212] rounded-3xl p-14 border border-emerald-900/30 shadow-2xl relative z-10 max-w-2xl mx-auto text-center animate-in zoom-in-95 duration-500">
-          <div className="relative w-32 h-32 mx-auto mb-10">
-            <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping opacity-75" />
-            <div className="absolute inset-0 bg-emerald-500/10 rounded-full" />
-            <div className="absolute inset-0 flex items-center justify-center text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
-              <CheckCircle2 size={64} strokeWidth={1.5} />
-            </div>
+        <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '60px 40px', textAlign: 'center' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--success-bg)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px' }}>
+            <CheckCircle2 size={40} />
           </div>
           
-          <h2 className="text-5xl font-black mb-5 tracking-tight text-white">Transfusión Exitosa</h2>
-          <p className="text-gray-400 text-lg mb-12 font-light leading-relaxed">
-            Se han volcado exitosamente <strong className="text-white">{progress.total} entidades</strong> al sistema central.
-            {errors.length > 0 && <span className="block mt-3 text-red-400 bg-red-950/30 py-2 px-4 rounded-xl border border-red-900/50 border-dashed inline-block">Sin embargo, registramos {errors.length} fallas de integración en el proceso. Consulta los logs para más detalles.</span>}
+          <h2 style={{ fontSize: '2.5rem', fontFamily: 'var(--font-serif)', color: 'var(--text-primary)', marginBottom: '15px' }}>¡Importación Exitosa!</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '30px' }}>
+            Se han volcado exitosamente <strong>{progress.total} registros</strong> en tu catálogo.
           </p>
+
+          {errors.length > 0 && (
+            <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: '15px', borderRadius: '8px', marginBottom: '30px', fontSize: '0.9rem' }}>
+              Registramos {errors.length} alertas durante el proceso. Puedes revisarlas en los logs.
+            </div>
+          )}
           
-          <div className="flex flex-col sm:flex-row justify-center gap-5">
-            <button 
-              onClick={() => window.location.href = '/propiedades'}
-              className="px-8 py-4 rounded-xl font-bold bg-white text-black hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-xl hover:-translate-y-1"
-            >
-              <Database size={18} /> Explorar Catálogo
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
             <button 
               onClick={() => {
                 setStep('choice');
@@ -524,10 +487,13 @@ export default function MigradorEntidades() {
                 setFolderGroups({});
                 setDriveFolderId('');
               }}
-              className="px-8 py-4 rounded-xl font-bold bg-[#1a1a1b] border border-gray-800 text-white hover:bg-gray-800 transition-all flex items-center justify-center gap-3"
+              className="btn btn-secondary"
             >
-              Registrar Nueva Flota
+              Hacer otra importación
             </button>
+            <a href="/propiedades" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+              <Database size={18} /> Ver Catálogo
+            </a>
           </div>
         </div>
       )}

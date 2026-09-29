@@ -35,7 +35,7 @@ router.get('/config', authenticate, (req, res) => {
 // Devuelve el estado de publicación de una propiedad en todos los portales
 router.get('/:propiedadId/estado', authenticate, async (req, res) => {
   try {
-    const estado = await obtenerEstadoPublicacion(req.params.propiedadId);
+    const estado = await obtenerEstadoPublicacion(req.params.propiedadId, req.user.agenciaId);
     res.json(estado);
   } catch (err) {
     console.error('[ERROR] portales estado:', err.message);
@@ -57,7 +57,7 @@ router.post('/publicar', authenticate, async (req, res) => {
   }
 
   const portalesValidos = Object.keys(PORTALES_CONFIG);
-  const portalesInvalidos = portales.filter(p => !portalesValidos.includes(p));
+  const portalesInvalidos = portales.filter(p => !portalesValidos.includes(p) && !p.startsWith('custom_'));
   if (portalesInvalidos.length > 0) {
     return res.status(400).json({
       error: `Portales no válidos: ${portalesInvalidos.join(', ')}`,
@@ -81,7 +81,7 @@ router.post('/publicar', authenticate, async (req, res) => {
     });
 
     // Publicar en background
-    publicarEnPortales(propiedadId, portales, serverBaseUrl)
+    publicarEnPortales(propiedadId, portales, serverBaseUrl, req.user.agenciaId)
       .then(resultados => {
         console.log(`[PORTALES] Publicación completada para ${propiedadId}:`, resultados);
       })
@@ -123,9 +123,9 @@ router.get('/feed', async (req, res) => {
 
   // Validar portal
   const portalesXML = ['idealista', 'fotocasa', 'kyero'];
-  if (!portal || !portalesXML.includes(portal)) {
+  if (!portal || (!portalesXML.includes(portal) && !portal.startsWith('custom_'))) {
     return res.status(400).json({
-      error: 'portal requerido',
+      error: 'portal requerido o no soportado',
       validos: portalesXML,
     });
   }
@@ -141,7 +141,10 @@ router.get('/feed', async (req, res) => {
     const host = req.headers['x-forwarded-host'] || req.get('host');
     const serverBaseUrl = process.env.PUBLIC_SERVER_URL || `${protocol}://${host}`;
 
-    const xml = await generarFeedXML(portal, serverBaseUrl);
+    // Para el feed XML público, se espera el agenciaId por Query String si es multi-tenant
+    const agenciaId = req.query.agenciaId || null;
+    
+    const xml = await generarFeedXML(portal, serverBaseUrl, agenciaId);
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1h
@@ -158,8 +161,11 @@ router.get('/feed/preview/:propiedadId', authenticate, async (req, res) => {
   const { portal = 'kyero' } = req.query;
 
   try {
-    const propiedad = await prisma.propiedad.findUnique({
-      where: { id: req.params.propiedadId, activo: true },
+    const whereProp = { id: req.params.propiedadId, activo: true };
+    if (req.user.agenciaId) whereProp.agenciaId = req.user.agenciaId;
+
+    const propiedad = await prisma.propiedad.findFirst({
+      where: whereProp,
       include: {
         alquilerVacacional: true,
         alquilerLargaDuracion: true,
@@ -189,7 +195,7 @@ router.get('/feed/preview/:propiedadId', authenticate, async (req, res) => {
       update: {},
     });
 
-    const xml = await generarFeedXML(portal, serverBaseUrl);
+    const xml = await generarFeedXML(portal, serverBaseUrl, req.user.agenciaId);
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.send(xml);

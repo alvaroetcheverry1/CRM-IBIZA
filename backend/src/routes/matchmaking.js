@@ -136,8 +136,11 @@ router.get('/:propiedadId', authenticate, async (req, res) => {
   try {
     const { propiedadId } = req.params;
 
-    const propiedad = await prisma.propiedad.findUnique({
-      where: { id: propiedadId },
+    const whereProp = { id: propiedadId };
+    if (req.user.agenciaId) whereProp.agenciaId = req.user.agenciaId;
+
+    const propiedad = await prisma.propiedad.findFirst({
+      where: whereProp,
       include: {
         venta: true,
         alquilerVacacional: true,
@@ -148,8 +151,11 @@ router.get('/:propiedadId', authenticate, async (req, res) => {
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
 
     const tipos = tiposCompatibles(propiedad.tipo);
+    const whereClientes = { activo: true, tipo: { in: tipos }, estado: { notIn: ['DESCARTADO', 'CERRADO'] } };
+    if (req.user.agenciaId) whereClientes.agenciaId = req.user.agenciaId;
+
     const clientes = await prisma.cliente.findMany({
-      where: { activo: true, tipo: { in: tipos }, estado: { notIn: ['DESCARTADO', 'CERRADO'] } },
+      where: whereClientes,
       take: 200,
     });
 
@@ -173,8 +179,11 @@ router.get('/cliente/:clienteId', authenticate, async (req, res) => {
   try {
     const { clienteId } = req.params;
 
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: clienteId },
+    const whereCliente = { id: clienteId };
+    if (req.user.agenciaId) whereCliente.agenciaId = req.user.agenciaId;
+
+    const cliente = await prisma.cliente.findFirst({
+      where: whereCliente,
     });
 
     if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -184,8 +193,11 @@ router.get('/cliente/:clienteId', authenticate, async (req, res) => {
     else if (cliente.tipo === 'INQUILINO') tiposPropiedad = ['VACACIONAL', 'LARGA_DURACION'];
     else tiposPropiedad = ['VENTA', 'VACACIONAL', 'LARGA_DURACION'];
 
+    const whereProps = { activo: true, tipo: { in: tiposPropiedad }, estado: { notIn: ['VENDIDA', 'ALQUILADA'] } };
+    if (req.user.agenciaId) whereProps.agenciaId = req.user.agenciaId;
+
     const propiedades = await prisma.propiedad.findMany({
-      where: { activo: true, tipo: { in: tiposPropiedad }, estado: { notIn: ['VENDIDA', 'ALQUILADA'] } },
+      where: whereProps,
       include: {
         venta: true,
         alquilerVacacional: true,
@@ -212,20 +224,28 @@ router.get('/cliente/:clienteId', authenticate, async (req, res) => {
 // POST /api/matchmaking/generar-pitch
 router.post('/generar-pitch', authenticate, async (req, res) => {
   try {
-    const { clienteId, propiedadId } = req.body;
-    const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
-    const propiedad = await prisma.propiedad.findUnique({ 
-      where: { id: propiedadId },
+    const { clienteId, propiedadId, catalogoToken } = req.body;
+    const whereCliente = { id: clienteId };
+    if (req.user.agenciaId) whereCliente.agenciaId = req.user.agenciaId;
+    const cliente = await prisma.cliente.findFirst({ where: whereCliente });
+
+    const whereProp = { id: propiedadId };
+    if (req.user.agenciaId) whereProp.agenciaId = req.user.agenciaId;
+    const propiedad = await prisma.propiedad.findFirst({ 
+      where: whereProp,
       include: { venta: true, alquilerVacacional: true, alquilerLargaDuracion: true }
     });
 
     if (!cliente || !propiedad) return res.status(404).json({ error: 'No encontrado' });
 
     if (!openai) {
-      return res.json({ pitch: `Hola ${cliente.nombre}, te envío información de ${propiedad.nombre}. Saludos.` });
+      let pitch = `Hola ${cliente.nombre}, te envío información de ${propiedad.nombre}. Saludos.`;
+      if (catalogoToken) pitch += `\n\nPuedes verla aquí: https://crm.ibiza/c/${catalogoToken}`;
+      return res.json({ pitch });
     }
 
     const precio = propiedad.venta?.precioVenta || propiedad.alquilerVacacional?.precioTemporadaAlta || propiedad.alquilerLargaDuracion?.rentaMensual || '';
+    const enlaceCatalogo = catalogoToken ? `\n\nIncluye este enlace en tu mensaje para que pueda ver las fotos y detalles: https://crm.ibiza/c/${catalogoToken}` : '';
 
     const sysPrompt = `Eres Sofía, asistente comercial de Ibiza Luxury Dreams.
 Redacta un mensaje de WhatsApp/Email muy elegante, persuasivo y exclusivo dirigido a ${cliente.nombre}.
@@ -233,7 +253,7 @@ Presenta la propiedad "${propiedad.nombre}" ubicada en ${propiedad.zona} con ${p
 Precio listado: ${precio} EUR.
 Presupuesto del cliente: ${cliente.presupuesto} EUR.
 Aprovecha cualquier detalle de las notas del cliente (${cliente.notas || 'Ninguna'}) o de la propiedad (${propiedad.descripcion || 'Ninguna'}) para persuadir.
-Máximo 3 párrafos cortos. No incluyas asunto, redacta directamente el mensaje de chat. Usa emojis elegantes.`;
+Máximo 3 párrafos cortos. No incluyas asunto, redacta directamente el mensaje de chat. Usa emojis elegantes.${enlaceCatalogo}`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -252,15 +272,20 @@ router.post('/enviar-dossier', authenticate, async (req, res) => {
   try {
     const { clienteId, propiedadId, emailDestino, nombreCliente, mensaje } = req.body;
 
-    const propiedad = await prisma.propiedad.findUnique({
-      where: { id: propiedadId },
-      select: { nombre: true, referencia: true, urlDriveCarpeta: true },
+    const whereProp = { id: propiedadId };
+    if (req.user.agenciaId) whereProp.agenciaId = req.user.agenciaId;
+
+    const propiedad = await prisma.propiedad.findFirst({
+      where: whereProp,
+      select: { id: true, nombre: true, referencia: true, urlDriveCarpeta: true },
     });
 
     console.log(`[MATCHMAKING] Dossier enviado a ${emailDestino || nombreCliente} para ${propiedad?.nombre}. Mensaje IA:\n${mensaje}`);
 
     if (clienteId) {
-      const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
+      const whereCliente = { id: clienteId };
+      if (req.user.agenciaId) whereCliente.agenciaId = req.user.agenciaId;
+      const cliente = await prisma.cliente.findFirst({ where: whereCliente });
       if (cliente && cliente.estado === 'NUEVO') {
         await prisma.cliente.update({ where: { id: clienteId }, data: { estado: 'CONTACTADO' } });
       }
@@ -271,7 +296,8 @@ router.post('/enviar-dossier', authenticate, async (req, res) => {
           tipo: 'EMAIL',
           descripcion: `Dossier de ${propiedad?.nombre} enviado. Mensaje:\n${mensaje}`,
           clienteId: cliente.id,
-          propiedadId: propiedad.id
+          propiedadId: propiedad.id,
+          agenciaId: req.user.agenciaId || null
         }
       });
     }

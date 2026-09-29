@@ -1,9 +1,28 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { propiedadesApi, propietariosApi, documentosApi, actividadesApi } from '../services/api';
-import { ArrowLeft, Bed, Bath, Square, Home, ExternalLink, FileText, Loader2, ImagePlus, CheckCircle, AlertCircle, Pencil, X, Save, Bot, FileCheck, Trash2, Phone, Mail, Eye, StickyNote, CheckSquare, Plus, Clock, Globe } from 'lucide-react';
+import { ArrowLeft, MapPin, Bed, Bath, Square, Home, ExternalLink, FileText, Loader2, ImagePlus, CheckCircle, AlertCircle, Pencil, X, Save, Bot, FileCheck, Trash2, Phone, Mail, Eye, StickyNote, CheckSquare, Plus, Clock, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+
+const markerIcon = L.divIcon({
+  html: `<div style="background-color: #1A3A5C; width: 18px; height: 18px; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.4);"></div>`,
+  className: 'custom-map-pin',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
+
+function MapClickSelector({ onSelect }) {
+  useMapEvents({
+    click(e) {
+      onSelect(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+}
 import PhotoSlider     from '../components/PhotoSlider';
 import MatchmakingModal from '../components/MatchmakingModal';
 import DossierModal    from '../components/DossierModal';
@@ -71,6 +90,30 @@ export default function PropiedadDetalle() {
   const [saving,           setSaving]           = useState(false);
   const [form,             setForm]             = useState(null);
   const [propietarios,     setPropietarios]     = useState([]);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  async function handleGenerarDescripcionIA(updateFormOnly = false) {
+    setGeneratingDesc(true);
+    const notasContexto = updateFormOnly ? form.notas : (propiedad.notas || '');
+    try {
+      const res = await propiedadesApi.generarDescripcion(id, notasContexto);
+      if (res.ok && res.descripcion) {
+        if (updateFormOnly) {
+          setField('descripcion', res.descripcion);
+          toast.success('✨ Descripción redactada con IA (actualizada en el formulario)');
+        } else {
+          qc.invalidateQueries({ queryKey: ['propiedad', id] });
+          toast.success('✨ Descripción redactada y guardada con IA');
+        }
+      } else {
+        toast.error('No se pudo generar la descripción');
+      }
+    } catch (err) {
+      toast.error('Error al generar con IA: ' + (err.message || 'desconocido'));
+    } finally {
+      setGeneratingDesc(false);
+    }
+  }
 
   const { data: propiedad, isLoading, isError } = useQuery({
     queryKey: ['propiedad', id],
@@ -99,6 +142,8 @@ export default function PropiedadDetalle() {
       caracteristicas:   p.caracteristicas ?? '',
       notas:             p.notas ?? '',
       propietarioId:     p.propietarioId ?? '',
+      latitud:           p.latitud ?? '',
+      longitud:          p.longitud ?? '',
       // Venta
       precioVenta:             p.venta?.precioVenta ?? '',
       precioMinimo:            p.venta?.precioMinimo ?? '',
@@ -168,6 +213,8 @@ export default function PropiedadDetalle() {
         caracteristicas:   form.caracteristicas || null,
         notas:             form.notas || null,
         propietarioId:     form.propietarioId || null,
+        latitud:           form.latitud ? parseFloat(form.latitud) : null,
+        longitud:          form.longitud ? parseFloat(form.longitud) : null,
       };
 
       if (propiedad.tipo === 'VENTA') {
@@ -250,6 +297,17 @@ export default function PropiedadDetalle() {
       toast.success('Foto eliminada');
     } catch (err) {
       toast.error('Error al eliminar foto');
+    }
+  }
+
+  async function handleSetMainPhoto(url) {
+    try {
+      await propiedadesApi.update(id, { fotoPrincipal: url });
+      qc.invalidateQueries({ queryKey: ['propiedad', id] });
+      qc.invalidateQueries({ queryKey: ['propiedades'] });
+      toast.success('Foto de portada actualizada');
+    } catch (err) {
+      toast.error('Error al actualizar la foto de portada: ' + err.message);
     }
   }
 
@@ -466,13 +524,43 @@ export default function PropiedadDetalle() {
         onChange={e => handlePhotoUpload(e.target.files)} />
 
       {/* ── Encabezado / Slider de fotos ── */}
-      <div style={{ marginBottom: uploadingPhotos.length > 0 ? '0.5rem' : '1.5rem', width: '100%', height: 420, borderRadius: 16, overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-        <PhotoSlider
-          fotos={propiedad.documentos?.filter(d => d.tipo === 'FOTO') || []}
-          onAddPhotos={() => fileInputRef.current?.click()}
-          onDeletePhoto={handleDeletePhoto}
-        />
-      </div>
+      {(() => {
+        const allFotos = [];
+        if (propiedad.fotos) {
+          try {
+            const parsed = JSON.parse(propiedad.fotos);
+            if (Array.isArray(parsed)) {
+              parsed.forEach(url => {
+                if (typeof url === 'string' && url.trim()) allFotos.push({ id: url, urlDrive: url });
+              });
+            }
+          } catch(e) {
+            propiedad.fotos.split(',').forEach(url => {
+              if (url.trim()) allFotos.push({ id: url.trim(), urlDrive: url.trim() });
+            });
+          }
+        }
+        if (propiedad.fotoPrincipal && !allFotos.find(f => f.urlDrive === propiedad.fotoPrincipal)) {
+          allFotos.unshift({ id: 'main', urlDrive: propiedad.fotoPrincipal });
+        }
+        propiedad.documentos?.filter(d => d.tipo === 'FOTO').forEach(d => {
+          if (!allFotos.find(f => f.urlDrive === d.urlDrive)) {
+            allFotos.push(d);
+          }
+        });
+
+        return (
+          <div style={{ marginBottom: uploadingPhotos.length > 0 ? '0.5rem' : '1.5rem', width: '100%', height: 420, borderRadius: 16, overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+            <PhotoSlider
+              fotos={allFotos}
+              fotoPrincipal={propiedad.fotoPrincipal}
+              onAddPhotos={() => fileInputRef.current?.click()}
+              onDeletePhoto={handleDeletePhoto}
+              onSetMainPhoto={handleSetMainPhoto}
+            />
+          </div>
+        );
+      })()}
 
       {/* Barra de progreso extracción PDF */}
       {extractingPdf && (
@@ -536,6 +624,32 @@ export default function PropiedadDetalle() {
                     <EditSelect value={form.estado} onChange={v => setField('estado', v)} options={ESTADOS} />
                   </div>
                 </div>
+                {/* Geolocalización */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <FieldLabel>Latitud</FieldLabel>
+                    <EditInput type="number" value={form.latitud} onChange={v => setField('latitud', v)} placeholder="Ej. 38.9067" />
+                  </div>
+                  <div>
+                    <FieldLabel>Longitud</FieldLabel>
+                    <EditInput type="number" value={form.longitud} onChange={v => setField('longitud', v)} placeholder="Ej. 1.4206" />
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel>Ubicación en el mapa (Haz clic para reposicionar)</FieldLabel>
+                  <div style={{ height: '220px', width: '100%', borderRadius: 10, overflow: 'hidden', border: '1px solid #CBD5E1', zIndex: 10 }}>
+                    <MapContainer center={form.latitud && form.longitud && !isNaN(parseFloat(form.latitud)) && !isNaN(parseFloat(form.longitud)) ? [parseFloat(form.latitud), parseFloat(form.longitud)] : [38.9067, 1.4206]} zoom={11} style={{ height: '100%', width: '100%' }}>
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <MapClickSelector onSelect={(lat, lng) => {
+                        setField('latitud', lat.toFixed(6));
+                        setField('longitud', lng.toFixed(6));
+                      }} />
+                      {form.latitud && form.longitud && !isNaN(parseFloat(form.latitud)) && !isNaN(parseFloat(form.longitud)) && (
+                        <Marker position={[parseFloat(form.latitud), parseFloat(form.longitud)]} icon={markerIcon} />
+                      )}
+                    </MapContainer>
+                  </div>
+                </div>
                 {/* Fila 2: hab + baños + m² c + m² p */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>
@@ -562,7 +676,19 @@ export default function PropiedadDetalle() {
                 </div>
                 {/* Descripción */}
                 <div>
-                  <FieldLabel>Descripción comercial</FieldLabel>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <FieldLabel>Descripción comercial</FieldLabel>
+                    <button 
+                      type="button"
+                      onClick={() => handleGenerarDescripcionIA(true)}
+                      disabled={generatingDesc}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 5 }}
+                    >
+                      {generatingDesc ? <Loader2 size={12} className="spin" /> : <Bot size={12} />}
+                      {generatingDesc ? 'Redactando...' : '✨ Redactar con IA'}
+                    </button>
+                  </div>
                   <textarea
                     className="form-input"
                     value={form.descripcion}
@@ -616,12 +742,26 @@ export default function PropiedadDetalle() {
                     <p style={{ fontSize: '0.875rem', color: '#4A5568', margin: 0 }}>{propiedad.municipio}</p>
                   </div>
                 )}
-                {propiedad.descripcion && (
-                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #EDE9E0' }}>
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #EDE9E0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <FieldLabel>Descripción</FieldLabel>
-                    <p style={{ fontSize: '0.875rem', color: '#4A5568', lineHeight: 1.7, margin: 0 }}>{propiedad.descripcion}</p>
+                    <button 
+                      type="button"
+                      onClick={() => handleGenerarDescripcionIA(false)}
+                      disabled={generatingDesc}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 5 }}
+                    >
+                      {generatingDesc ? <Loader2 size={12} className="spin" /> : <Bot size={12} />}
+                      {generatingDesc ? 'Redactando...' : '✨ Redactar con IA'}
+                    </button>
                   </div>
-                )}
+                  {propiedad.descripcion ? (
+                    <p style={{ fontSize: '0.875rem', color: '#4A5568', lineHeight: 1.7, margin: 0 }}>{propiedad.descripcion}</p>
+                  ) : (
+                    <p style={{ fontSize: '0.875rem', color: '#8A9BB0', fontStyle: 'italic', margin: 0 }}>Sin descripción comercial. ¡Usa la IA para redactar una ahora!</p>
+                  )}
+                </div>
                 {propiedad.notas && (
                   <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #EDE9E0' }}>
                     <FieldLabel>Notas internas</FieldLabel>
@@ -999,6 +1139,29 @@ export default function PropiedadDetalle() {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* Ubicación en el mapa (Modo vista) */}
+          {!editMode && propiedad.latitud && propiedad.longitud && !isNaN(parseFloat(propiedad.latitud)) && !isNaN(parseFloat(propiedad.longitud)) && (
+            <div className="card card-body">
+              <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <MapPin size={18} style={{ color: '#1A3A5C' }} /> Ubicación
+              </h4>
+              <div style={{ height: '200px', width: '100%', borderRadius: 10, overflow: 'hidden', border: '1px solid #CBD5E1', zIndex: 10 }}>
+                <MapContainer center={[parseFloat(propiedad.latitud), parseFloat(propiedad.longitud)]} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={true} scrollWheelZoom={false}>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Marker position={[parseFloat(propiedad.latitud), parseFloat(propiedad.longitud)]} icon={markerIcon} />
+                </MapContainer>
+              </div>
+              <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#4A5568', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {propiedad.municipio && <div><strong>Municipio:</strong> {propiedad.municipio}</div>}
+                {propiedad.zona && <div><strong>Zona:</strong> {propiedad.zona}</div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: '0.75rem', color: '#8A9BB0' }}>
+                  <span>Lat: {parseFloat(propiedad.latitud).toFixed(5)}</span>
+                  <span>Lng: {parseFloat(propiedad.longitud).toFixed(5)}</span>
+                </div>
+              </div>
             </div>
           )}
 

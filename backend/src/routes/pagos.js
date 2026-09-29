@@ -34,7 +34,26 @@ router.put('/:id', authenticate, async (req, res) => {
         fechaCobro: req.body.estado === 'COBRADO' ? new Date() : null,
         notas: req.body.notas,
       },
+      include: {
+        alquilerLargaDuracion: {
+          include: {
+            propiedad: { select: { nombre: true } }
+          }
+        }
+      }
     });
+
+    if (req.body.estado === 'RETRASO') {
+      const { createNotification } = require('../services/notificationService');
+      createNotification(
+        req.user.agenciaId || null,
+        'IMPAGO',
+        'Pago en Retraso',
+        `Se ha detectado un retraso de pago en la propiedad "${pago.alquilerLargaDuracion?.propiedad?.nombre || 'Alquiler Larga Duración'}"`,
+        '/facturacion'
+      ).catch((err) => console.error('[Impago Notification Error]', err.message));
+    }
+
     res.json(pago);
   } catch (err) {
     res.status(500).json({ error: err.message });

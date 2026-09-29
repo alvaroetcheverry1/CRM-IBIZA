@@ -162,27 +162,22 @@ class ScraperService {
 
   _formatApifyResults(items, plataforma, zona) {
     return items.map((item, idx) => {
-      // Intentamos extraer nombres y teléfonos si el scraper los provee.
-      // Para scrapers genéricos (URL personalizada), usamos el título de la página
-      const nombreRaw = item.advertiserName || item.hostName || item.contactName || item.title || 'Perfil Extraído';
-      const telefonoRaw = item.phone || item.contactPhone || null;
+      const titleRaw = item.title || item.name || 'Propiedad Extraída';
+      const description = item.text ? item.text.substring(0, 300) + '...' : (item.description || 'Sin descripción');
       
-      const telefonoFallback = telefonoRaw || 'Contactar vía web';
-      const descripcion = item.text ? item.text.substring(0, 150) + '...' : (item.title || 'Sin descripción');
-
       return {
         id: `sc-apify-${Date.now()}-${idx}`,
-        nombre: nombreRaw,
-        apellidos: '',
-        telefono: telefonoFallback,
-        email: item.email || 'No disponible',
-        origen: plataforma === 'custom' ? 'URL Directa' : plataforma.charAt(0).toUpperCase() + plataforma.slice(1),
-        tipo: 'Contacto Extraído',
-        zonaInteres: zona || 'General',
-        presupuesto: item.price || 0,
-        comentarios: `Extraído de: ${item.url || 'Origen desconocido'}. Resumen: ${descripcion}`
+        nombre: titleRaw,
+        descripcion: `Extraído de: ${item.url || 'Origen desconocido'}\n\n${description}`,
+        tipo: 'VENTA',
+        zona: zona || 'General',
+        habitaciones: parseInt(item.rooms || item.bedrooms || 2),
+        metrosCuadrados: parseInt(item.size || item.area || 100),
+        precioEstimado: parseInt(item.price || 0),
+        origenUrl: item.url || '',
+        fotos: item.images ? item.images.slice(0, 3) : []
       };
-    }).filter(lead => lead.nombre && !lead.nombre.toLowerCase().includes('agencia'));
+    });
   }
 
   async _simulateScraping(job, config) {
@@ -194,34 +189,34 @@ class ScraperService {
     job.logs.push('🤖 [IA Filter] Analizando semántica para descartar agencias y buscar propietarios directos...');
     await sleep(4000);
     
-    const leads = [];
-    const numLeads = Math.floor(Math.random() * 8) + 3; // Genera entre 3 y 10 leads
+    const propiedades = [];
+    const numProps = Math.floor(Math.random() * 5) + 3; // Genera entre 3 y 7 propiedades
 
-    const NOMBRES = ['Carlos', 'Laura', 'David', 'Elena', 'Marc', 'Sofía', 'Alejandro', 'Marta', 'Javier', 'Lucía'];
-    const APELLIDOS = ['Ruiz', 'Martínez', 'Gómez', 'Fernández', 'López', 'Sánchez', 'Pérez', 'García', 'Ribas', 'Costa'];
-
-    for(let i = 0; i < numLeads; i++) {
-      const nombre = NOMBRES[Math.floor(Math.random() * NOMBRES.length)];
-      const apellido = APELLIDOS[Math.floor(Math.random() * APELLIDOS.length)];
+    const NOMBRES = ['Villa de lujo con vistas', 'Ático moderno', 'Chalet independiente', 'Finca rústica reformada', 'Apartamento premium'];
+    
+    for(let i = 0; i < numProps; i++) {
+      const nombre = NOMBRES[Math.floor(Math.random() * NOMBRES.length)] + ' en ' + config.zona;
+      const habs = Math.floor(Math.random() * 4) + 2;
+      const precio = Math.floor(Math.random() * 20 + 5) * 100000;
       
-      leads.push({
+      propiedades.push({
         id: `sc-rnd-${Date.now()}-${i}`,
         nombre,
-        apellidos: apellido,
-        telefono: '+34 6' + Math.floor(Math.random() * 90000000).toString().padStart(8, '0'),
-        email: `${nombre.toLowerCase()}.${apellido.toLowerCase()}${Math.floor(Math.random() * 99)}@gmail.com`,
-        origen: config.plataforma.charAt(0).toUpperCase() + config.plataforma.slice(1),
-        tipo: 'Vendedor (Particular)',
-        zonaInteres: config.zona,
-        presupuesto: Math.floor(Math.random() * 20 + 5) * 100000,
-        comentarios: `Detectado anuncio de particular. Propiedad valorada en el rango indicado en ${config.zona}.`
+        descripcion: `Propiedad detectada por IA en plataforma ${config.plataforma}. Ubicada en la mejor zona de ${config.zona}. Ideal para inversión o cliente final.`,
+        tipo: 'VENTA',
+        zona: config.zona,
+        habitaciones: habs,
+        metrosCuadrados: habs * 40,
+        precioEstimado: precio,
+        origenUrl: `https://${config.plataforma}.com/inmueble/${Math.floor(Math.random()*1000000)}`,
+        fotos: []
       });
     }
 
     job.logs.push(`⚠️ NOTA: Estos datos son generados porque no se detectó APIFY_API_TOKEN. Para extracción real, configura el token en el backend.`);
-    job.results = leads;
+    job.results = propiedades;
     job.status = 'COMPLETED';
-    job.logs.push(`✅ Barrido simulado finalizado. ${leads.length} perfiles recuperados.`);
+    job.logs.push(`✅ Barrido simulado finalizado. ${propiedades.length} propiedades recuperadas.`);
   }
 }
 

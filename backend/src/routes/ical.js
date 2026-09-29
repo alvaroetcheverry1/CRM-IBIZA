@@ -32,7 +32,7 @@ router.post('/sync', authenticate, async (req, res) => {
 
         // Primero intentamos fetch directo
         // Uso de fetch nativo (Node 20+)
-        const response = await fetch(url, { timeout: 10000 });
+        const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const text = await response.text();
 

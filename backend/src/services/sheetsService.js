@@ -4,7 +4,8 @@ const path = require('path');
 
 class SheetsService {
   constructor() {
-    this.enabled = !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH;
+    this.enabled = !!(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
+      (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN));
     this.sheets = null;
     this.sheetId = process.env.GOOGLE_SHEET_MASTER_ID;
   }
@@ -14,12 +15,21 @@ class SheetsService {
     if (!this.enabled || !this.sheetId) return null;
 
     try {
-      const keyPath = path.resolve(__dirname, '../../', process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
-      const key = require(keyPath);
-      const auth = new google.auth.GoogleAuth({
-        credentials: key,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-      });
+      let auth;
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
+        const keyPath = path.resolve(__dirname, '../../', process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
+        const key = require(keyPath);
+        auth = new google.auth.GoogleAuth({
+          credentials: key,
+          scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+        });
+      } else {
+        auth = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+        );
+        auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+      }
       this.sheets = google.sheets({ version: 'v4', auth });
       return this.sheets;
     } catch (err) {
@@ -177,4 +187,4 @@ class SheetsService {
 }
 
 const sheetsService = new SheetsService();
-module.exports = { sheetsService };
+module.exports = { SheetsService, sheetsService };

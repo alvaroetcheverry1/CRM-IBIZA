@@ -7,9 +7,17 @@ import toast from 'react-hot-toast';
 const CATEGORIA_BADGE = { PREMIUM: 'badge-reservada', ESTANDAR: 'badge-larga', NUEVO: 'badge-nuevo' };
 const CATEGORIAS = ['PREMIUM', 'ESTANDAR', 'NUEVO'];
 
-// ─── Drawer de detalle/edición de propietario ───────────────────────────────
+// ─── Drawer de detalle/edición de propietario ─────────
 function PropietarioDrawer({ propietario, onClose }) {
   const qc = useQueryClient();
+  
+  const { data: fullPropietario, isLoading: isLoadingFull } = useQuery({
+    queryKey: ['propietario-detail', propietario.id],
+    queryFn: () => propietariosApi.get(propietario.id),
+  });
+
+  const propsCount = fullPropietario?.propiedades?.length ?? propietario._count?.propiedades ?? 0;
+
   const [edit, setEdit]       = useState(false);
   const [saving, setSaving]   = useState(false);
   const [form, setForm]       = useState({
@@ -85,7 +93,9 @@ function PropietarioDrawer({ propietario, onClose }) {
                 {propietario.nombre?.[0]}{propietario.apellidos?.[0]}
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{propietario.nombre} {propietario.apellidos}</h3>
+                <h3 style={{ margin: 0, fontSize: '1.15rem' }}>
+                  {propietario.nombre} {propietario.apellidos} {propsCount > 0 ? `· ${propsCount} propiedad${propsCount !== 1 ? 'es' : ''}` : ''}
+                </h3>
                 <div style={{ opacity: 0.75, fontSize: '0.8rem', marginTop: 2 }}>{propietario.nif}</div>
               </div>
             </div>
@@ -96,7 +106,7 @@ function PropietarioDrawer({ propietario, onClose }) {
               {propietario.categoria}
             </span>
             <span style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '3px 12px', fontSize: '0.75rem' }}>
-              🏠 {propietario._count?.propiedades ?? 0} propiedades
+              🏠 {propsCount} propiedad{propsCount !== 1 ? 'es' : ''}
             </span>
           </div>
         </div>
@@ -139,6 +149,102 @@ function PropietarioDrawer({ propietario, onClose }) {
                   </F>
                 ))}
               </div>
+              {/* Enlace al Portal del Propietario */}
+              <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '1rem', border: '1px solid #E2E8F0', marginTop: '0.5rem' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#8A9BB0', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.06em' }}>Portal del Propietario</div>
+                {propietario.token ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={`${window.location.origin}/propietario/${propietario.token}`} 
+                        style={{ flex: 1, fontSize: '0.75rem', padding: '4px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#F1F5F9', color: '#475569' }} 
+                        id="portal-link-input"
+                        onClick={(e) => e.target.select()}
+                      />
+                      <button 
+                        onClick={() => {
+                          const val = `${window.location.origin}/propietario/${propietario.token}`;
+                          navigator.clipboard.writeText(val);
+                          toast.success('📋 Enlace copiado al portapapeles');
+                        }}
+                        style={{ padding: '4px 10px', background: '#1A3A5C', color: 'white', border: 'none', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                      <a 
+                        href={`/propietario/${propietario.token}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        style={{ fontSize: '0.75rem', color: '#4A6FA5', textDecoration: 'underline', fontWeight: 500 }}
+                      >
+                        Abrir Portal ↗
+                      </a>
+                      <button 
+                        onClick={async () => {
+                          if (!window.confirm('¿Regenerar el enlace de acceso? El enlace anterior dejará de funcionar.')) return;
+                          try {
+                            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+                            const res = await fetch(`${apiBaseUrl}/propietarios/${propietario.id}/reset-token`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                              }
+                            });
+                            if (!res.ok) throw new Error('Error en petición');
+                            const result = await res.json();
+                            if (result.ok && result.token) {
+                              toast.success('🔄 Enlace regenerado');
+                              qc.invalidateQueries({ queryKey: ['propietarios'] });
+                              propietario.token = result.token; 
+                            }
+                          } catch (err) {
+                            toast.error('No se pudo regenerar el token');
+                          }
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#DC2626', fontSize: '0.72rem', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                      >
+                        Regenerar Enlace
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: '0.75rem', color: '#8A9BB0', fontStyle: 'italic' }}>Este propietario no dispone de token de acceso.</span>
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+                          const res = await fetch(`${apiBaseUrl}/propietarios/${propietario.id}/reset-token`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                          });
+                          if (!res.ok) throw new Error('Error en petición');
+                          const result = await res.json();
+                          if (result.ok && result.token) {
+                            toast.success('🔑 Enlace de portal creado');
+                            qc.invalidateQueries({ queryKey: ['propietarios'] });
+                            propietario.token = result.token;
+                          }
+                        } catch (err) {
+                          toast.error('No se pudo crear el token');
+                        }
+                      }}
+                      style={{ padding: '6px 12px', background: '#1A3A5C', color: 'white', border: 'none', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Generar Enlace de Acceso
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {propietario.notas && (
                 <F label="Notas">
                   <div style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, background: '#F8FAFC', padding: '0.75rem', borderRadius: 8 }}>{propietario.notas}</div>

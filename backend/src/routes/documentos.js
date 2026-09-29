@@ -24,7 +24,7 @@ const upload = multer({
 // GET /api/documentos — listar documentos
 router.get('/', authenticate, async (req, res) => {
   const { propiedadId, propietarioId, clienteId, page = 1, limit = 30 } = req.query;
-  const where = {};
+  const where = { ...(req.user.agenciaId ? { agenciaId: req.user.agenciaId } : {}) };
   if (propiedadId) where.propiedadId = propiedadId;
   if (propietarioId) where.propietarioId = propietarioId;
   if (clienteId) where.clienteId = clienteId;
@@ -63,6 +63,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
         propietarioId: propietarioId || null,
         clienteId: clienteId || null,
         subidoPorId: req.user.id,
+        agenciaId: req.user.agenciaId || null,
       },
     });
 

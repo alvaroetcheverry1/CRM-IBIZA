@@ -1,5 +1,5 @@
-const { prisma } = require('../utils/prisma');
-const { logger } = require('../utils/logger');
+const { prisma } = require('../src/utils/prisma');
+const { logger } = require('../src/utils/logger');
 
 /**
  * Genera datos de prueba para el entorno de desarrollo

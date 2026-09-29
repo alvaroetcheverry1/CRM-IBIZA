@@ -896,6 +896,48 @@ No inventes datos numéricos si no hay indicios firmes.`;
       return {};
     }
   }
+
+  /**
+   * Genera un email de bienvenida personalizado según el perfil del cliente/lead
+   */
+  async generarEmailBienvenidaPersonalizado(cliente) {
+    if (!this.enabled) {
+      logger.info('IA (mock): generando email de bienvenida personalizado');
+      return `Queremos darte la más cálida bienvenida a Ibiza Inteligente. Agradecemos enormemente tu interés en nuestros servicios de corretaje de propiedades exclusivas en la isla.`;
+    }
+
+    logger.info(`IA: Generando texto de email personalizado para lead ${cliente.id}`);
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Eres un copywriter de lujo experto en inmobiliarias premium en Ibiza (Ibiza Luxury Dreams). Tu tarea es redactar un mensaje de bienvenida personalizado para un cliente potencial, basándote en su perfil.'
+          },
+          {
+            role: 'user',
+            content: `Redacta un texto de bienvenida personalizado (máximo 120 palabras, unos 2 párrafos) para el cliente:
+Nombre: ${cliente.nombre}
+Tipo de cliente: ${cliente.tipo}
+Presupuesto: ${cliente.presupuesto ? cliente.presupuesto + ' EUR' : 'No especificado'}
+Zona de interés: ${cliente.zonaInteres || 'Ibiza'}
+Origen del lead: ${cliente.origen || 'Contacto Directo'}
+Notas del agente: ${cliente.notas || 'Ninguna'}
+
+Destaca que un asesor experto se pondrá en contacto pronto para presentarle una selección a medida. Sé profesional, cálido y sofisticado. Responde con el texto redactado directamente, sin introducciones ni saludos genéricos al principio (los saludos genéricos se añadirán en la plantilla de correo).`
+          }
+        ],
+        max_tokens: 400,
+        temperature: 0.7,
+      });
+
+      return response.choices[0].message.content.trim();
+    } catch (err) {
+      logger.error('[IA] Error en generarEmailBienvenidaPersonalizado:', err.message);
+      return `Queremos darte la más cálida bienvenida a Ibiza Inteligente. Agradecemos enormemente tu interés en nuestros servicios de corretaje de propiedades exclusivas en la isla.`;
+    }
+  }
 }
 
 const iaService = new IAService();

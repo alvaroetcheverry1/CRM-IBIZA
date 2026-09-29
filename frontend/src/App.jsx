@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AgencyProvider, useAgency } from './context/AgencyContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/Login';
+import Registro from './pages/Registro';
+import AdminPanel from './pages/AdminPanel';
 import Dashboard from './pages/Dashboard';
 import Propiedades from './pages/Propiedades';
 import PropiedadDetalle from './pages/PropiedadDetalle';
@@ -24,6 +26,11 @@ import GeneradorPropuestas from './pages/GeneradorPropuestas';
 import PipelineVentas from './pages/PipelineVentas';
 import MigradorEntidades from './pages/MigradorEntidades';
 import Configuracion from './pages/Configuracion';
+import Catalogos from './pages/Catalogos';
+import PublicCatalogo from './pages/PublicCatalogo';
+import Agenda from './pages/Agenda';
+import PortalPropietario from './pages/PortalPropietario';
+import RoleGuard from './components/RoleGuard';
 
 function PrivateRoute({ children }) {
   const { user, loading: authLoading } = useAuth();
@@ -39,13 +46,18 @@ function PrivateRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/c/:token" element={<PublicCatalogo />} />
+      <Route path="/propietario/:token" element={<PortalPropietario />} />
       <Route path="/catalogo/vacacional" element={<CatalogoPublico />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/registro" element={<Registro />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="configuracion" element={<Configuracion />} />
+        <Route path="admin" element={<RoleGuard allowedRoles={['DIRECTOR', 'SUPERADMIN']}><AdminPanel /></RoleGuard>} />
         <Route path="propiedades" element={<Propiedades />} />
         <Route path="propiedades/:id" element={<PropiedadDetalle />} />
+        <Route path="agenda" element={<Agenda />} />
         <Route path="vacacional" element={<AlquilerVacacional />} />
         <Route path="vacacional/calendario" element={<CalendarioVacacional />} />
         <Route path="larga-duracion" element={<AlquilerLargaDuracion />} />
@@ -53,7 +65,7 @@ function AppRoutes() {
         <Route path="propietarios" element={<Propietarios />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="documentos" element={<Documentos />} />
-        <Route path="facturacion" element={<Facturacion />} />
+        <Route path="facturacion" element={<RoleGuard allowedRoles={['DIRECTOR', 'SUPERADMIN', 'BACKOFFICE']}><Facturacion /></RoleGuard>} />
         <Route path="agente-comercial" element={<AgenteComercial />} />
         <Route path="whatsapp" element={<WhatsAppBot />} />
         <Route path="agente-scraper" element={<AgenteScraper />} />
@@ -62,6 +74,7 @@ function AppRoutes() {
         <Route path="propuestas" element={<GeneradorPropuestas />} />
         <Route path="pipeline" element={<PipelineVentas />} />
         <Route path="migracion" element={<MigradorEntidades />} />
+        <Route path="catalogos" element={<Catalogos />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

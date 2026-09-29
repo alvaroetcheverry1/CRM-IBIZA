@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Neural CRM - El CRM Inmobiliario Inteligente que automatiza tu agencia de alto standing. IA que procesa dossiers en 3 minutos, matchmaking automático y control total de tu portfolio." />
+  <title>Neural CRM | CRM Inmobiliario Inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:    #0D1B2A;
+      --med:     #1A3A5C;
+      --sky:     #4A6FA5;
+      --gold:    #C9A84C;
+      --gold-l:  #E8C96A;
+      --gold-d:  #9E7D2F;
+      --pearl:   #F5F0E8;
+      --white:   #FFFFFF;
+      --slate:   #8A9BB0;
+      --dark:    #060F1A;
+    }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--white); overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; }
+
+    /* ─── UTILS ─────────────────────────────────── */
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+    .hidden { display: none !important; }
+
+    /* ─── NAV ──────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      background: rgba(13,27,42,0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+    }
+    .nav-brand { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700; }
+    .nav-brand span { color: var(--gold); }
+    .nav-sub { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--slate); margin-top: 2px; }
+    .nav-links { display: flex; gap: 2.5rem; }
+    .nav-links a { font-size: 0.85rem; color: rgba(255,255,255,0.75); transition: color 0.2s; font-weight: 500; }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,168,76,0.4); }
+
+    /* ─── HERO ──────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0D1B2A 0%, #1A3A5C 55%, #0D1B2A 100%);
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 10rem 0 6rem;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      right: -10%;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -15%;
+      left: -5%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(74,111,165,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4rem;
+    }
+    .hero-left { flex: 1; }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(201,168,76,0.12);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+    .hero-tag::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title em { font-style: italic; color: var(--gold); }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+      max-width: 550px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-num { font-size: 1.75rem; font-weight: 800; color: var(--gold); line-height: 1; }
+    .stat-lab { font-size: 0.72rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+    .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.875rem 2rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.4); }
+    .btn-secondary {
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: white;
+      font-weight: 500;
+      font-size: 0.9rem;
+      padding: 0.875rem 2rem;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.07); border-color: var(--gold); color: var(--gold); }
+    .hero-right { width: 420px; flex-shrink: 0; }
+    .demo-card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+    }
+    .demo-video {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #1A3A5C 0%, #4A6FA5 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .demo-video::after {
+      content: '▶';
+      font-size: 3rem;
+      background: rgba(201,168,76,0.9);
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .demo-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .demo-desc { font-size: 0.85rem; color: var(--slate); line-height: 1.6; }
+
+    /* ─── SECTION ───────────────────────────────── */
+    .section { padding: 6rem 0; }
+    .section-tag {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      color: rgba(255,255,255,0.65);
+      font-size: 1rem;
+      line-height: 1.8;
+      max-width: 560px;
+      margin-bottom: 3rem;
+    }
+
+    /* ─── WHY US CARDS ─────────────────────────── */
+    .why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .why-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+    .why-card:hover { border-color: rgba(201,168,76,0.25); transform: translateY(-4px); }
+    .why-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .why-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; }
+    .why-desc { font-size: 0.85rem; color: rgba(255,255,255,0.65); line-height: 1.7; }
+
+    /* ─── FEATURES 3 IN 1 ──────────────────────── */
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .feature-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+    .feature-card:hover { border-color: rgba(201,168,76,0.25); transform: translateY(-4px); }
+    .feature-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .feature-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .feature-desc { font-size: 0.85rem; color: rgba(255,255,255,0.65); line-height: 1.7; }
+
+    /* ─── AGENTS IA ─────────────────────────────── */
+    .agents-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+    .agent-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 1.75rem;
+      transition: all 0.3s;
+    }
+    .agent-card:hover { border-color: rgba(201,168,76,0.25); transform: translateY(-4px); }
+    .agent-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .agent-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .agent-desc { font-size: 0.78rem; color: rgba(255,255,255,0.6); line-height: 1.6; }
+
+    /* ─── MULTI-TENANT ─────────────────────────── */
+    .multitenant-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+    .multitenant-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2rem;
+    }
+    .multitenant-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; }
+    .multitenant-desc { font-size: 0.85rem; color: rgba(255,255,255,0.65); line-height: 1.7; margin-bottom: 1.5rem; }
+    .multitenant-list { list-style: none; }
+    .multitenant-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.7);
+      padding: 6px 0;
+    }
+    .multitenant-list li::before {
+      content: '✓';
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* ─── DASHBOARD KPI ────────────────────────── */
+    .dashboard-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2rem;
+    }
+    .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    .kpi-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .kpi-icon { font-size: 1.5rem; color: var(--gold); margin-bottom: 0.75rem; }
+    .kpi-title { font-size: 0.75rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .kpi-value { font-size: 1.5rem; font-weight: 800; color: white; }
+    .kpi-change { font-size: 0.72rem; margin-top: 4px; }
+    .kpi-change.up { color: #68D391; }
+    .kpi-change.down { color: #F56565; }
+
+    /* ─── PRICING ───────────────────────────────── */
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+    .pricing-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 2.5rem;
+      position: relative;
+    }
+    .pricing-card.popular {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.05);
+    }
+    .pricing-card.popular::after {
+      content: 'MÁS POPULAR';
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .pricing-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .pricing-price { font-size: 2.5rem; font-weight: 800; color: var(--gold); margin-bottom: 1rem; }
+    .pricing-price span { font-size: 0.85rem; color: var(--slate); font-weight: 400; }
+    .pricing-desc { font-size: 0.85rem; color: rgba(255,255,255,0.65); line-height: 1.6; margin-bottom: 2rem; }
+    .pricing-features { list-style: none; margin-bottom: 2rem; }
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.7);
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .pricing-features li:last-child { border-bottom: none; }
+    .pricing-features li::before {
+      content: '✓';
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .pricing-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 1rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pricing-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.4); }
+
+    /* ─── TESTIMONIALS ──────────────────────────── */
+    .testimonial-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2.5rem;
+    }
+    .testimonial-text {
+      font-style: italic;
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.8);
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+    }
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .author-avatar {
+      width: 50px; height: 50px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .author-info h4 { font-weight: 700; font-size: 1rem; }
+    .author-info p { font-size: 0.75rem; color: var(--slate); margin-top: 2px; }
+    .metrics-table {
+      margin-top: 2rem;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .metrics-table th, .metrics-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .metrics-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate); }
+    .metrics-table td { font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+    .metrics-table td:last-child { text-align: right; font-weight: 700; color: var(--gold); }
+    .improvement { color: #68D391; font-weight: 700; }
+
+    /* ─── CTA FINAL ─────────────────────────────── */
+    .cta-final {
+      background: linear-gradient(135deg, rgba(201,168,76,0.1), rgba(26,58,92,0.6));
+      border-top: 1px solid rgba(201,168,76,0.15);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      padding: 5rem 0;
+    }
+    .cta-form {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 20px;
+      padding: 2.5rem;
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--slate); margin-bottom: 6px; }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input::placeholder { color: rgba(255,255,255,0.3); }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.06);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 1rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,168,76,0.5); }
+    .form-disclaimer { font-size: 0.68rem; color: var(--slate); text-align: center; margin-top: 1rem; line-height: 1.6; }
+
+    /* ─── FOOTER ────────────────────────────────── */
+    footer {
+      padding: 3rem 0 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2rem; margin-bottom: 2.5rem; }
+    .footer-col h4 { font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { font-size: 0.82rem; color: rgba(255,255,255,0.6); transition: color 0.2s; }
+    .footer-col a:hover { color: var(--gold); }
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.78rem;
+      color: var(--slate);
+    }
+    .footer-brand { font-family: 'Playfair Display', serif; color: white; }
+    .footer-brand span { color: var(--gold); }
+
+    /* ─── RESPONSIVE ────────────────────────────── */
+    @media (max-width: 1024px) {
+      .why-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .agents-grid { grid-template-columns: repeat(2, 1fr); }
+      .multitenant-grid { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem; }
+      .nav-links { display: none; }
+      .hero-content { flex-direction: column; text-align: center; }
+      .hero-title { font-size: 2.5rem; }
+      .hero-desc { margin: 0 auto 2rem; }
+      .hero-btns { justify-content: center; }
+      .hero-right { width: 100%; }
+      .demo-card { text-align: center; }
+      .why-grid, .features-grid, .agents-grid, .kpi-grid, .pricing-grid, .footer-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; text-align: center; gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ──────────────────────────────────────── -->
+<nav id="navbar">
+  <div>
+    <div class="nav-brand">Neural <span>CRM</span></div>
+    <div class="nav-sub">CRM Inmobiliario Inteligente</div>
+  </div>
+  <div class="nav-links">
+    <a href="#por-que-neural">Por qué Neural CRM</a>
+    <a href="#funcionalidades">Funcionalidades</a>
+    <a href="#agentes-ia">Agentes IA</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#precios">Precios</a>
+    <a href="#testimonios">Testimonios</a>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">
+    Solicitar Demo
+  </button>
+</nav>
+
+<!-- ─── HERO ──────────────────────────────────────── -->
+<section class="hero">
+  <div class="container hero-content">
+    <div class="hero-left">
+      <div class="hero-tag">CRM Inmobiliario · Inteligencia Artificial</div>
+      <h1 class="hero-title">
+        El CRM Inmobiliario<br/>
+        <em>Inteligente</em><br/>
+        que automatiza tu agencia
+      </h1>
+      <p class="hero-desc">
+        IA que procesa dossiers en <strong>3 minutos</strong> (97% menos tiempo), 
+        matchmaking automático de compradores con villas, y control total de tu 
+        portfolio desde un solo dashboard.
+      </p>
+      <div class="hero-stats">
+        <div>
+          <div class="stat-num">40+</div>
+          <div class="stat-lab">Funcionalidades</div>
+        </div>
+        <div>
+          <div class="stat-num">97%</div>
+          <div class="stat-lab">Ahorro de tiempo</div>
+        </div>
+        <div>
+          <div class="stat-num">24/7</div>
+          <div class="stat-lab">WhatsApp Bot</div>
+        </div>
+        <div>
+          <div class="stat-num">0%</div>
+          <div class="stat-lab">Doble reserva</div>
+        </div>
+      </div>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">
+          🎯 Solicitar Demostración
+        </button>
+        <button class="btn-secondary" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">
+          🧪 Probar Gratis 14 días
+        </button>
+      </div>
+    </div>
+
+    <!-- DEMO VIDEO / SCREENCAST -->
+    <div class="hero-right" id="demo-card">
+      <div class="demo-card">
+        <div class="demo-video" onclick="alert('Demo video: Sube un PDF y la IA extrae datos, fotos y redacta copy comercial en 3 minutos')"></div>
+        <h3 class="demo-title">Procesa un dossier en 3 minutos</h3>
+        <p class="demo-desc">
+          Sube un PDF de villa y la IA extrae fotos de alta resolución, datos del propietario, características de la villa y redacta el copy comercial. Incluso si es un escaneado.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── WHY NEURAL ────────────────────────────────── -->
+<section id="por-que-neural" class="section" style="background: rgba(255,255,255,0.02);">
+  <div class="container">
+    <div class="section-tag">¿Por qué Neural CRM?</div>
+    <h2 class="section-title">8 diferenciadores que te llevarán al siguiente nivel</h2>
+    <p class="section-desc">
+      No es solo un CRM: es un sistema completo de automatización con IA que te ayuda a cerrar más ventas, ahorrar tiempo y escalar tu agencia sin esfuerzo.
+    </p>
+
+    <div class="why-grid">
+      <!-- 1. Matchmaking IA -->
+      <div class="why-card">
+        <div class="why-icon">🎯</div>
+        <h3 class="why-title">Matchmaking IA</h3>
+        <p class="why-desc">
+          Conectamos automáticamente compradores con propiedades compatibles. Score de compatibilidad 0-100 basado en presupuesto, zona, habitaciones y estado del lead. Top 5 matches enriquecidos con GPT-4o.
+        </p>
+      </div>
+      <!-- 2. OCR Triple Motor -->
+      <div class="why-card">
+        <div class="why-icon">📄</div>
+        <h3 class="why-title">OCR Triple Motor</h3>
+        <p class="why-desc">
+          Procesa cualquier PDF: texto nativo, JPEG embebidos, o escaneado. Motor 1: extracción nativa. Motor 2: imágenes JPEG. Motor 3: renderizado 300 DPI + Tesseract OCR local.
+        </p>
+      </div>
+      <!-- 3. Catálogos+Tracking -->
+      <div class="why-card">
+        <div class="why-icon">📊</div>
+        <h3 class="why-title">Catálogos con Tracking</h3>
+        <p class="why-desc">
+          Envía catálogos con enlace único al cliente y recibe notificaciones en tiempo real. Cada apertura genera una notificación: "El catálogo ha sido visualizado (3 visitas totales)".
+        </p>
+      </div>
+      <!-- 4. Portal Propietario -->
+      <div class="why-card">
+        <div class="why-icon">🏠</div>
+        <h3 class="why-title">Portal del Propietario</h3>
+        <p class="why-desc">
+          Cada propietario tiene su portal con URL tokenizada (sin contraseña). Ve en tiempo real sus reservas, cobros de renta y actividades comerciales sin llamar a la agencia.
+        </p>
+      </div>
+      <!-- 5. Propuestas PDF -->
+      <div class="why-card">
+        <div class="why-icon">🖨️</div>
+        <h3 class="why-title">Propuestas Print-Ready</h3>
+        <p class="why-desc">
+          Genera dossiers PDF de alta calidad con 3 plantillas de lujo. Selecciona hasta 5 propiedades, elige la plantilla y exporta. Confidencialidad marcada: "Válido 30 días".
+        </p>
+      </div>
+      <!-- 6. WhatsApp Bot -->
+      <div class="why-card">
+        <div class="why-icon">💬</div>
+        <h3 class="why-title">WhatsApp Bot 24/7</h3>
+        <p class="why-desc">
+          Atención automática a clientes con GPT-4o y memoria de conversación. Recomendación de propiedades, cualificación de leads y envío de enlaces a catálogos.
+        </p>
+      </div>
+      <!-- 7. Channel Manager -->
+      <div class="why-card">
+        <div class="why-icon">📅</div>
+        <h3 class="why-title">Channel Manager iCal</h3>
+        <p class="why-desc">
+          Sincronización automática con Airbnb, Booking, MioWeb y venta directa. Evita doble reserva en todos los canales y ajusta precios automáticamente según la demanda.
+        </p>
+      </div>
+      <!-- 8. KPIs Avanzados -->
+      <div class="why-card">
+        <div class="why-icon">📈</div>
+        <h3 class="why-title">8 KPIs de Negocio</h3>
+        <p class="why-desc">
+          Tasa de conversión, ocupación media, rentabilidad portfolio, tiempo medio de venta, comisiones por agente, ingresos mensuales dinámicos y alertas activas.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FUNCIONALIDADES 3 EN 1 ────────────────────── -->
+<section id="funcionalidades" class="section">
+  <div class="container">
+    <div class="section-tag">Núcleo Inmobiliario Híbrido</div>
+    <h2 class="section-title">Gestión completa de 3 modelos de negocio</h2>
+    <p class="section-desc">
+      Alquiler vacacional, alquiler de larga duración y venta/captación: todo en un solo sistema con fluxos de trabajo adaptados a cada necesidad.
+    </p>
+
+    <div class="features-grid">
+      <!-- Vacacional -->
+      <div class="feature-card">
+        <div class="feature-icon">🌴</div>
+        <h3 class="feature-title">Alquiler Vacacional</h3>
+        <p class="feature-desc">
+          Gestión completa de alquiler turístico con licencias ETV. Tarifas dinámicas por temporadas (Alta/Media/Baja), check-in/check-out y gestión de huéspedes. Sincronización con canales externos (Airbnb, Booking).
+        </p>
+      </div>
+      <!-- Larga Duración -->
+      <div class="feature-card">
+        <div class="feature-icon">🏡</div>
+        <h3 class="feature-title">Alquiler Larga Duración</h3>
+        <p class="feature-desc">
+          Seguimiento profesional de inquilinos y contratos LAU. Control de vencimientos de contrato (30 y 90 días de antelación), gestión de fianzas y pagos recurrentes. Alertas de pagos en retraso.
+        </p>
+      </div>
+      <!-- Venta -->
+      <div class="feature-card">
+        <div class="feature-icon">🏛</div>
+        <h3 class="feature-title">Venta / Captación</h3>
+        <p class="feature-desc">
+          Pipeline comercial Kanban con gestión completa de leads. Estados: Captación → Contacto → Visitas → Propuesta → Cierre. Referencias catastrales y precios públicos vs. mínimos confidenciales.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── AGENTES IA ────────────────────────────────── -->
+<section id="agentes-ia" class="section" style="background: rgba(255,255,255,0.02);">
+  <div class="container">
+    <div class="section-tag">Sistema de Agentes IA</div>
+    <h2 class="section-title">Automatización inteligente de procesos</h2>
+    <p class="section-desc">
+      Nuestros agentes IA trabajan 24/7 para procesar documentos, captar leads, cualificar clientes y automatizar tareas repetitivas.
+    </p>
+
+    <div class="agents-grid">
+      <!-- Vision AI -->
+      <div class="agent-card">
+        <div class="agent-icon">🤖</div>
+        <h3 class="agent-title">Vision AI (Ingesta Documental)</h3>
+        <p class="agent-desc">
+          Subes un PDF/Dossier → IA extrae datos + fotos + copy comercial. Extracción de texto, imágenes y estructura. Redacción automática de descripción comercial.
+        </p>
+      </div>
+      <!-- Agente Captador -->
+      <div class="agent-card">
+        <div class="agent-icon">🔍</div>
+        <h3 class="agent-title">Agente Captador (Scraping)</h3>
+        <p class="agent-desc">
+          Escaneo constante de portales inmobiliarios: Idealista, Fotocasa, Airbnb, Facebook. URLs personalizadas. Datos de contacto de particulares y scoring de calidad.
+        </p>
+      </div>
+      <!-- WhatsApp Inbound -->
+      <div class="agent-card">
+        <div class="agent-icon">💬</div>
+        <h3 class="agent-title">Agente WhatsApp Inbound</h3>
+        <p class="agent-desc">
+          Atención 24/7 con GPT-4o y memoria de conversación. Mensajes entrantes con contexto del CRM. Recomendación de propiedades del catálogo.
+        </p>
+      </div>
+      <!-- Legal & Setter -->
+      <div class="agent-card">
+        <div class="agent-icon">⚖️</div>
+        <h3 class="agent-title">Agente Legal & Setter</h3>
+        <p class="agent-desc">
+          Revisión de contratos frente a LAU. Recordatorios automáticos de visitas por WhatsApp. Envío de contratos firmados y análisis de cláusulas de riesgo.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MULTI-TENANCY ─────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <div class="section-tag">Sindicación & Multi-Tenancy</div>
+    <h2 class="section-title">Escalabilidad y personalización total</h2>
+
+    <div class="multitenant-grid">
+      <!-- Feeds XML -->
+      <div class="multitenant-card">
+        <h3 class="multitenant-title">📡 Feeds XML Automáticos</h3>
+        <p class="multitenant-desc">
+          Exportación automática a portales inmobiliarios para maximizar visibilidad:
+        </p>
+        <ul class="multitenant-list">
+          <li>Idealista (XML sitemap)</li>
+          <li>Fotocasa (feed XML)</li>
+          <li>Kyero (feed XML)</li>
+          <li>James Edition (JSON feed)</li>
+        </ul>
+      </div>
+      <!-- Marca Blanca -->
+      <div class="multitenant-card">
+        <h3 class="multitenant-title">🎨 Marca Blanca</h3>
+        <p class="multitenant-desc">
+          Cada agencia usa su propio branding sin interferir con otros clientes:
+        </p>
+        <ul class="multitenant-list">
+          <li>Logo personalizado</li>
+          <li>Colores corporativos (CSS variables)</li>
+          <li>Dominio dedicado (app.tudominio.com)</li>
+          <li>Aislamiento lógico de datos</li>
+          <li>Permisos RBAC por agencia</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── DASHBOARD KPI ─────────────────────────────── -->
+<section id="dashboard" class="section" style="background: rgba(255,255,255,0.02);">
+  <div class="container">
+    <div class="section-tag">Dashboard Analytics</div>
+    <h2 class="section-title">Métricas avanzadas de negocio</h2>
+    <p class="section-desc">
+      Nuestro dashboard no muestra solo números: calcula KPIs que te ayudan a tomar decisiones estratégicas.
+    </p>
+
+    <div class="dashboard-card">
+      <div class="dashboard-header">
+        <h3>📊 8 KPIs Avanzados</h3>
+        <div>
+          <select class="form-select" style="width: 180px; font-size: 0.8rem; padding: 6px;">
+            <option>Últimos 30 días</option>
+            <option>Últimos 90 días</option>
+            <option>Últimos 6 meses</option>
+            <option>Últimos 12 meses</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-title">Ingresos Mensuales</div>
+          <div class="kpi-value">€42.3K</div>
+          <div class="kpi-change up">↑ 12% vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-title">Tasa de Conversión</div>
+          <div class="kpi-value">24.5%</div>
+          <div class="kpi-change up">↑ 3.2% vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🏖</div>
+          <div class="kpi-title">Ocupación Media</div>
+          <div class="kpi-value">78.3%</div>
+          <div class="kpi-change up">↑ 5.1% vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">📊</div>
+          <div class="kpi-title">Rentabilidad Portfolio</div>
+          <div class="kpi-value">12.8%</div>
+          <div class="kpi-change up">↑ 0.8% vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">⏳</div>
+          <div class="kpi-title">Tiempo Medio Venta</div>
+          <div class="kpi-value">45 días</div>
+          <div class="kpi-change down">↓ 7 días vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-title">Comisiones por Agente</div>
+          <div class="kpi-value">8 agentes</div>
+          <div class="kpi-change up">↑ 2 nuevos este mes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🔔</div>
+          <div class="kpi-title">Alertas Activas</div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-change down">↓ 3 solucionadas hoy</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">👁️</div>
+          <div class="kpi-title">Vistas de Catálogos</div>
+          <div class="kpi-value">156</div>
+          <div class="kpi-change up">↑ 24% vs mes anterior</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PRICING ───────────────────────────────────── -->
+<section id="precios" class="section">
+  <div class="container">
+    <div class="section-tag">Precios SaaS</div>
+    <h2 class="section-title">Planes flexibles para agencias de todos los tamaños</h2>
+    <p class="section-desc">
+      Elige el plan que mejor se adapte a tu agencia. Sin costes ocultos. Cancela cuando quieras.
+    </p>
+
+    <div class="pricing-grid">
+      <!-- Starter -->
+      <div class="pricing-card">
+        <h3 class="pricing-name">Starter</h3>
+        <div class="pricing-price">299€<span>/mes</span></div>
+        <p class="pricing-desc">Ideal para agencias boutique en crecimiento.</p>
+        <ul class="pricing-features">
+          <li>Hasta 50 propiedades</li>
+          <li>2 usuarios activos</li>
+          <li>IA básica (extracción PDF con límite)</li>
+          <li>Dashboard con 3 KPIs básicos</li>
+          <li>Soporte por email</li>
+        </ul>
+        <button class="pricing-btn" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">Empezar Starter</button>
+      </div>
+      <!-- Pro -->
+      <div class="pricing-card popular">
+        <h3 class="pricing-name">Pro</h3>
+        <div class="pricing-price">799€<span>/mes</span></div>
+        <p class="pricing-desc">Para agencias medianas en crecimiento.</p>
+        <ul class="pricing-features">
+          <li>Hasta 200 propiedades</li>
+          <li>5 usuarios activos</li>
+          <li>Channel Manager iCal (Airbnb, Booking)</li>
+          <li>WhatsApp Bot 24/7 con GPT-4o</li>
+          <li>Catálogos digitales con tracking</li>
+          <li>Portal del propietario</li>
+          <li>OCR triple motor (sin límites)</li>
+          <li>8 KPIs avanzados</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="pricing-btn" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">Empezar Pro</button>
+      </div>
+      <!-- Elite -->
+      <div class="pricing-card">
+        <h3 class="pricing-name">Elite / Enterprise</h3>
+        <div class="pricing-price">1.999€<span>/mes</span></div>
+        <p class="pricing-desc">Agencias con necesidades avanzadas.</p>
+        <ul class="pricing-features">
+          <li>Ilimitado</li>
+          <li>15+ usuarios activos</li>
+          <li>Marca blanca completa</li>
+          <li>Agente Captador (scraping Apify)</li>
+          <li>Migrador desde Google Drive</li>
+          <li>Feed XML automático</li>
+          <li>Agente Legal & Setter</li>
+          <li>Agente Outbound (guiones IA)</li>
+          <li>Onboarding guiado</li>
+          <li>SLA 99.9%</li>
+        </ul>
+        <button class="pricing-btn" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">Solicitar Demo Enterprise</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TESTIMONIALS ──────────────────────────────── -->
+<section id="testimonios" class="section" style="background: rgba(255,255,255,0.02);">
+  <div class="container">
+    <div class="section-tag">Casos de Éxito</div>
+    <h2 class="section-title">Lo que dicen nuestras agencias beta</h2>
+    <p class="section-desc">
+      Agencias en Ibiza y Mallorca que ya están ahorrando tiempo y cerrando más ventas.
+    </p>
+
+    <div class="multitenant-grid" style="grid-template-columns: 1fr;">
+      <div class="testimonial-card">
+        <div class="testimonial-text">
+          "El OCR triple motor nos ha cambiado la vida. Ya no perdemos tiempo extrayendo datos de PDFs y el WhatsApp Bot captura leads 24/7. En 3 meses hemos duplicado nuestro portafolio y nuestros ingresos."
+        </div>
+        <div class="testimonial-author">
+          <div class="author-avatar">CM</div>
+          <div class="author-info">
+            <h4>Carlos M.</h4>
+            <p>Director de <strong>Ibiza Luxury Dreams</strong></p>
+          </div>
+        </div>
+        
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th>Antes</th>
+              <th>Después</th>
+              <th>Mejora</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tiempo por dossier PDF</td>
+              <td>90 min</td>
+              <td>3 min</td>
+              <td class="improvement">97% ahorro</td>
+            </tr>
+            <tr>
+              <td>Leads cualificados/día</td>
+              <td>5-7</td>
+              <td>12-15</td>
+              <td class="improvement">+100%</td>
+            </tr>
+            <tr>
+              <td>Propiedades procesadas/semana</td>
+              <td>10</td>
+              <td>35</td>
+              <td class="improvement">+250%</td>
+            </tr>
+            <tr>
+              <td>Cierre de ventas/mes</td>
+              <td>2-3</td>
+              <td>5-7</td>
+              <td class="improvement">+100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA FINAL ─────────────────────────────────── -->
+<section id="cta-final" class="cta-final">
+  <div class="container">
+    <div class="section-tag">¿Listo para transformar tu agencia?</div>
+    <h2 class="section-title" style="text-align: center; margin-bottom: 2rem;">Empieza tu prueba gratuita de 14 días</h2>
+    <p class="section-desc" style="text-align: center; max-width: 600px; margin: 0 auto 3rem;">
+      Sin tarjeta de crédito. Sin compromiso. Descubre por qué las agencias de lujo eligen Neural CRM.
+    </p>
+
+    <div class="cta-form">
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 1.5rem;">Rellena tus datos y te contactamos en menos de 2 horas</h3>
+      <form id="cta-form" onsubmit="event.preventDefault(); alert('¡Gracias! En breve un agente se pondrá en contacto contigo.');">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nombre *</label>
+            <input class="form-input" type="text" required placeholder="Tu nombre" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellido *</label>
+            <input class="form-input" type="text" required placeholder="Tu apellido" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email corporativo *</label>
+          <input class="form-input" type="email" required placeholder="tu@agencia.com" />
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input class="form-input" type="tel" placeholder="+34 600 000 000" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Agencia</label>
+            <input class="form-input" type="text" placeholder="Nombre de tu agencia" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Cuántas propiedades gestionas?</label>
+          <select class="form-select">
+            <option value="">Selecciona una opción</option>
+            <option value="1-10">1-10 propiedades</option>
+            <option value="11-50">11-50 propiedades</option>
+            <option value="51-200">51-200 propiedades</option>
+            <option value="200+">Más de 200 propiedades</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-submit">✨ Solicitar Demostración</button>
+        <p class="form-disclaimer">
+          🔒 Tus datos están protegidos · RGPD · Sin spam.<br/>
+          Cancela cuando quieras. Sin costes de salida.
+        </p>
+      </form>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+      <p style="font-size: 0.85rem; color: rgba(255,255,255,0.65);">
+        ¿Tienes más de 50 propiedades en carpetas de Google Drive? 
+        <a href="#" style="color: var(--gold);">Te enviamos un agente para importar todo tu inventario automáticamente.</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="footer-brand">Neural <span>CRM</span></div>
+        <p style="font-size: 0.82rem; color: rgba(255,255,255,0.6); margin-top: 1rem; line-height: 1.6;">
+          CRM Inmobiliario Inteligente que automatiza tu agencia de alto standing.<br/>
+          IA que procesa dossiers en 3 minutos, matchmaking automático y control total de tu portfolio.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>Plataforma</h4>
+        <ul>
+          <li><a href="#por-que-neural">Por qué Neural CRM</a></li>
+          <li><a href="#agentes-ia">Agentes IA</a></li>
+          <li><a href="#funcionalidades">Funcionalidades</a></li>
+          <li><a href="#dashboard">Dashboard</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="#">Documentación</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Casos de éxito</a></li>
+          <li><a href="#">Vídeos tutorial</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacidad</a></li>
+          <li><a href="#">Términos</a></li>
+          <li><a href="#">Cookies</a></li>
+          <li><a href="#">Contacto</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 Neural CRM SL · NIF: B-00000000 · All rights reserved</div>
+      <div style="color: var(--gold);">Licencia API: NEU-2026-IB-0001</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── TOAST NOTIFICATION ────────────────────────── -->
+<div id="toast" style="position: fixed; top: 1.5rem; right: 1.5rem; background: #1A3A5C; border: 1px solid rgba(201,168,76,0.3); border-radius: 12px; padding: 1rem 1.5rem; font-size: 0.875rem; z-index: 300; box-shadow: 0 12px 32px rgba(0,0,0,0.4); display: none; gap: 10px; align-items: center; max-width: 320px; animation: slideDown 0.3s ease;">
+  <span>✓</span>
+  <span id="toast-msg">Mensaje</span>
+</div>
+
+<script>
+// ─── NAV SCROLL EFFECT ────────────────────────────
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  if (window.scrollY > 50) {
+    nav.style.background = 'rgba(13,27,42,0.97)';
+    nav.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)';
+  } else {
+    nav.style.background = 'rgba(13,27,42,0.9)';
+    nav.style.boxShadow = 'none';
+  }
+});
+
+// ─── TOAST NOTIFICATION ────────────────────────────
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  toast.style.display = 'flex';
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.style.display = 'none';
+    toast.classList.remove('show');
+  }, 4000);
+}
+
+// ─── CTA FORM HANDLER ──────────────────────────────
+document.getElementById('cta-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  showToast('¡Gracias! En breve un agente se pondrá en contacto contigo.');
+});
+</script>
+
+</body>
+</html>

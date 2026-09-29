@@ -91,17 +91,52 @@ router.get('/', authenticate, [
   query('search').optional().isString(),
   query('page').optional().isInt({ min: 1 }).toInt(),
   query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('habitaciones').optional().isInt().toInt(),
+  query('banos').optional().isInt().toInt(),
+  query('piscina').optional().isString(),
+  query('precioMin').optional().isFloat().toFloat(),
+  query('precioMax').optional().isFloat().toFloat(),
 ], async (req, res) => {
   if (handleValidation(req, res)) return;
 
-  const { tipo, estado, zona, search, page = 1, limit = 20 } = req.query;
+  const { 
+    tipo, estado, zona, search, page = 1, limit = 20,
+    habitaciones, banos, piscina, precioMin, precioMax
+  } = req.query;
   const skip = (page - 1) * limit;
 
   const where = { activo: true };
+  if (req.user.agenciaId) where.agenciaId = req.user.agenciaId;
   if (tipo) where.tipo = tipo;
   if (estado) where.estado = estado;
   if (zona) where.zona = { contains: zona, mode: 'insensitive' };
   
+  if (habitaciones) where.habitaciones = { gte: habitaciones };
+  if (banos) where.banos = { gte: banos };
+  if (piscina) where.piscina = piscina;
+
+  // Filtrado por rangos de precio según el tipo de propiedad
+  if (precioMin !== undefined || precioMax !== undefined) {
+    const minVal = precioMin !== undefined ? precioMin : 0;
+    const maxVal = precioMax !== undefined ? precioMax : 999999999;
+    
+    if (tipo === 'VENTA') {
+      where.venta = { precioVenta: { gte: minVal, lte: maxVal } };
+    } else if (tipo === 'VACACIONAL') {
+      where.alquilerVacacional = { precioTemporadaAlta: { gte: minVal, lte: maxVal } };
+    } else if (tipo === 'LARGA_DURACION') {
+      where.alquilerLargaDuracion = { rentaMensual: { gte: minVal, lte: maxVal } };
+    } else {
+      // Si no hay tipo definido pero hay rangos de precio, podemos dejar que prisma filtre 
+      // aplicando filtros opcionales en cualquier relación
+      where.OR = [
+        { venta: { precioVenta: { gte: minVal, lte: maxVal } } },
+        { alquilerVacacional: { precioTemporadaAlta: { gte: minVal, lte: maxVal } } },
+        { alquilerLargaDuracion: { rentaMensual: { gte: minVal, lte: maxVal } } }
+      ];
+    }
+  }
+
   if (search) {
     where.OR = [
       { nombre: { contains: search, mode: 'insensitive' } },
@@ -323,10 +358,51 @@ router.delete('/:id', authenticate, requireRole('DIRECTOR', 'SUPERADMIN'), async
     });
 
     await auditLog(req.user.id, 'DELETE', 'Propiedad', req.params.id, null, null);
-    res.json({ message: 'Propiedad eliminada correctamente' });
+
+    res.json({ message: 'Propiedad eliminada (soft delete)' });
   } catch (err) {
     res.status(500).json({ error: 'Error al eliminar propiedad', detail: err.message });
   }
 });
 
+// ─── POST /api/propiedades/:id/generar-descripcion ──────────
+// Genera una descripción comercial enriquecida por IA (OpenAI GPT-4o) combinando notas de la propiedad y sus imágenes.
+router.post('/:id/generar-descripcion', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notas } = req.body;
+
+    const propiedad = await prisma.propiedad.findUnique({
+      where: { id, activo: true },
+      include: {
+        documentos: { where: { tipo: 'FOTO' } }
+      }
+    });
+
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+
+    // Priorizar notas pasadas, luego notas internas de la propiedad, luego la descripción corta existente
+    const textoNotas = notas || propiedad.notas || propiedad.descripcion || 'Propiedad de lujo en Ibiza';
+
+    // Obtener URLs de fotos
+    const fotosUrls = propiedad.documentos
+      .map(d => d.urlDrive)
+      .filter(url => url && url.startsWith('http'));
+
+    const descripcionGenerada = await iaService.generarDescripcionConFotos(
+      textoNotas,
+      fotosUrls,
+      id
+    );
+
+    await auditLog(req.user.id, 'UPDATE', 'Propiedad_IA_Desc', id, { descripcion: propiedad.descripcion }, { descripcion: descripcionGenerada });
+
+    res.json({ ok: true, descripcion: descripcionGenerada });
+  } catch (err) {
+    console.error('[ERROR] generar-descripcion:', err.message);
+    res.status(500).json({ error: 'Error al generar la descripción comercial con IA', detail: err.message });
+  }
+});
+
 module.exports = router;
+

@@ -23,6 +23,11 @@ const actividadesRoutes = require('./routes/actividades');
 const migracionRoutes = require('./routes/migracion');
 const portalesRoutes = require('./routes/portales');
 const scraperRoutes = require('./routes/scraper');
+const propuestasRoutes = require('./routes/propuestas');
+const catalogosRoutes = require('./routes/catalogos');
+const searchRoutes = require('./routes/search');
+const notificacionesRoutes = require('./routes/notificaciones');
+const tareasRoutes = require('./routes/tareas');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +97,7 @@ app.use('/api/uploads', (req, res, next) => {
 
 // ─── Rutas ─────────────────────────────────────────────────
 const configuracionRoutes = require('./routes/configuracion');
+const usuariosRoutes = require('./routes/usuarios');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/propiedades', propiedadesRoutes);
@@ -102,6 +108,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reservas', reservasRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/facturas', facturasRoutes);
+app.use('/api/propuestas', propuestasRoutes);
 app.use('/api/matchmaking', matchmakingRoutes);
 app.use('/api/ical', icalRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
@@ -110,6 +117,15 @@ app.use('/api/migracion', migracionRoutes);
 app.use('/api/portales', portalesRoutes);
 app.use('/api/scraper', scraperRoutes);
 app.use('/api/configuracion', configuracionRoutes);
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/catalogos', catalogosRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/tareas', tareasRoutes);
+
+// ─── SUPERADMIN ────────────────────────────────────────────
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
 
 // ─── Health Check ──────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -148,6 +164,10 @@ app.listen(PORT, () => {
   logger.info(`🏝 Ibiza Luxury Dreams CRM · Backend escuchando en puerto ${PORT}`);
   logger.info(`📊 Modo: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🌐 CORS habilitado para: ${ALLOWED_ORIGINS.join(', ')}`);
+
+  // Iniciar cron de sincronización iCal en segundo plano
+  const icalCron = require('./services/icalCron');
+  icalCron.start();
 });
 
 module.exports = app;

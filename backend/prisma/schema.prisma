@@ -12,50 +12,86 @@ datasource db {
 }
 
 // ============================================================
-// ENUMS
-// ============================================================
-
-// ============================================================
 // MODELS
 // ============================================================
+
+// ─── Multi-Tenancy: Modelo Central de Agencia ─────────────────────────────
+model Agencia {
+  id            String    @id @default(cuid())
+  nombre        String
+  email         String    @unique
+  passwordHash  String?   // Para login email+contraseña del dueño de la agencia
+  plan          String    @default("TRIAL") // TRIAL | STARTER | PRO | ELITE
+  estado        String    @default("PENDIENTE") // PENDIENTE | ACTIVA | SUSPENDIDA
+  trialExpira   DateTime?
+  telefono      String?
+  pais          String?   @default("España")
+  notas         String?   // Notas internas del superadmin
+  activadaEn    DateTime?
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  // Relaciones
+  usuarios          Usuario[]
+  propietarios      Propietario[]
+  propiedades       Propiedad[]
+  clientes          Cliente[]
+  documentos        Documento[]
+  actividades       Actividad[]
+  contratos         ContratoMandato[]
+  publicaciones     PublicacionPortal[]
+  configuracion     ConfiguracionAgencia[]
+  catalogos         Catalogo[]
+  notificaciones    Notificacion[]
+  tareas            Tarea[]
+}
 
 model Usuario {
   id            String    @id @default(cuid())
   googleId      String?   @unique
   email         String    @unique
+  passwordHash  String?   // Para login email+contraseña
   nombre        String
   apellidos     String?
   avatar        String?
-  rol           String    @default("AGENTE")
+  rol           String    @default("AGENTE") // SUPERADMIN | DIRECTOR | AGENTE
   activo        Boolean   @default(true)
   ultimoAcceso  DateTime?
   creadoEn      DateTime  @default(now())
   actualizadoEn DateTime  @updatedAt
 
+  agenciaId   String?
+  agencia     Agencia?   @relation(fields: [agenciaId], references: [id])
+
   propiedades Propiedad[]
   documentos  Documento[]
   actividades Actividad[]
   auditLogs   AuditLog[]
+  tareas      Tarea[]
 }
 
 model Propietario {
   id                  String   @id @default(cuid())
   nombre              String
   apellidos           String
-  nif                 String // cifrado en uso real
+  nif                 String
   telefono            String
   telefonoAlternativo String?
   email               String
   direccion           String?
   ciudad              String?
   pais                String?  @default("España")
-  iban                String? // cifrado en uso real
+  iban                String?
   categoria           String   @default("ESTANDAR")
   notas               String?
   urlDriveCarpeta     String?
   activo              Boolean  @default(true)
+  token               String?  @unique
   creadoEn            DateTime @default(now())
   actualizadoEn       DateTime @updatedAt
+
+  agenciaId   String?
+  agencia     Agencia? @relation(fields: [agenciaId], references: [id])
 
   propiedades Propiedad[]
   contratos   ContratoMandato[]
@@ -64,7 +100,7 @@ model Propietario {
 
 model Propiedad {
   id                String   @id @default(cuid())
-  referencia        String   @unique // ALQ-001, VTA-001
+  referencia        String   @unique
   nombre            String
   tipo              String
   zona              String
@@ -85,22 +121,25 @@ model Propiedad {
   vistasMar         Boolean  @default(false)
   categoria         String   @default("ESTANDAR")
   estado            String   @default("DISPONIBLE")
-  caracteristicas   String? // separadas por coma
+  caracteristicas   String?
   descripcion       String?
   notas             String?
   urlDriveCarpeta   String?
   fotoPrincipal     String?
-  fotos             String
+  fotos             String   @default("[]")
   activo            Boolean  @default(true)
+  precioCompra      Decimal?
   creadoEn          DateTime @default(now())
   actualizadoEn     DateTime @updatedAt
+
+  agenciaId   String?
+  agencia     Agencia?     @relation(fields: [agenciaId], references: [id])
 
   propietarioId String?
   propietario   Propietario? @relation(fields: [propietarioId], references: [id])
   agenteId      String?
   agente        Usuario?     @relation(fields: [agenteId], references: [id])
 
-  // Datos específicos por tipo
   alquilerVacacional    AlquilerVacacional?
   alquilerLargaDuracion AlquilerLargaDuracion?
   venta                 Venta?
@@ -110,8 +149,11 @@ model Propiedad {
   auditLogs        AuditLog[]
   reservasExternas ReservaExterna[]
   publicaciones    PublicacionPortal[]
+  catalogos        CatalogoPropiedad[]
+  tareas           Tarea[]
 
   @@index([tipo, estado, zona])
+  @@index([agenciaId])
 }
 
 model AlquilerVacacional {
@@ -119,27 +161,20 @@ model AlquilerVacacional {
   propiedadId String    @unique
   propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
 
-  // Licencias
-  licenciaETV String?
-  cedula      String?
-
-  // Tarifas (€ por semana)
+  licenciaETV          String?
+  cedula               String?
   precioTemporadaAlta  Decimal?
   precioTemporadaMedia Decimal?
   precioTemporadaBaja  Decimal?
   depositoGarantia     Decimal?
-
-  // Políticas
-  checkInHora        String? @default("16:00")
-  checkOutHora       String? @default("11:00")
-  instruccionesLlave String?
-  minimoNoches       Int?    @default(7)
-  personasMaximas    Int?
-
-  // Plataformas
-  urlAirbnb  String?
-  urlBooking String?
-  urlMioweb  String?
+  checkInHora          String?  @default("16:00")
+  checkOutHora         String?  @default("11:00")
+  instruccionesLlave   String?
+  minimoNoches         Int?     @default(7)
+  personasMaximas      Int?
+  urlAirbnb            String?
+  urlBooking           String?
+  urlMioweb            String?
 
   reservas Reserva[]
 }
@@ -161,7 +196,7 @@ model Reserva {
   depositoDevuelto Boolean  @default(false)
   temporada        String
   notas            String?
-  origen           String?  @default("DIRECTO") // AIRBNB, BOOKING, DIRECTO
+  origen           String?  @default("DIRECTO")
   creadoEn         DateTime @default(now())
 }
 
@@ -170,20 +205,17 @@ model AlquilerLargaDuracion {
   propiedadId String    @unique
   propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
 
-  // Contrato
-  inquilinoNombre   String?
-  inquilinoNif      String?
-  inquilinoTelefono String?
-  inquilinoEmail    String?
-  fechaInicio       DateTime?
-  duracionMeses     Int?      @default(12)
-  fechaVencimiento  DateTime?
-  rentaMensual      Decimal?
-  fianzaMeses       Int?      @default(2)
-  fianzaImporte     Decimal?
-
-  // Control de pagos
-  diaPagoCada            Int?      @default(1) // día del mes
+  inquilinoNombre        String?
+  inquilinoNif           String?
+  inquilinoTelefono      String?
+  inquilinoEmail         String?
+  fechaInicio            DateTime?
+  duracionMeses          Int?      @default(12)
+  fechaVencimiento       DateTime?
+  rentaMensual           Decimal?
+  fianzaMeses            Int?      @default(2)
+  fianzaImporte          Decimal?
+  diaPagoCada            Int?      @default(1)
   ipcUltimaActualizacion DateTime?
 
   pagos PagoRenta[]
@@ -194,7 +226,7 @@ model PagoRenta {
   alquilerLargaDuracionId String
   alquilerLargaDuracion   AlquilerLargaDuracion @relation(fields: [alquilerLargaDuracionId], references: [id])
 
-  mes        DateTime // Primer día del mes al que corresponde
+  mes        DateTime
   importe    Decimal
   estado     String    @default("PENDIENTE")
   fechaCobro DateTime?
@@ -208,12 +240,12 @@ model Venta {
   propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
 
   precioVenta          Decimal?
-  precioMinimo         Decimal? // campo privado
+  precioMinimo         Decimal?
   referenciaCatastral  String?
   numRegistroPropiedad String?
-  estadoHipotecario    String    @default("LIBRE")
-  comisionAgencia      Decimal? // porcentaje
-  etapaPipeline        String    @default("CAPTACION")
+  estadoHipotecario    String   @default("LIBRE")
+  comisionAgencia      Decimal?
+  etapaPipeline        String   @default("CAPTACION")
   fechaArras           DateTime?
   fechaEscritura       DateTime?
   notario              String?
@@ -233,15 +265,21 @@ model Cliente {
   habitacionesMin Int?
   habitacionesMax Int?
   notas           String?
-  origen          String? // WEB, REFERIDO, PORTAL, LLAMADA
+  origen          String?
   urlDriveCarpeta String?
   activo          Boolean  @default(true)
+  scoreIA         Int?
+  fechaPrimerContacto DateTime?
   creadoEn        DateTime @default(now())
   actualizadoEn   DateTime @updatedAt
+
+  agenciaId   String?
+  agencia     Agencia? @relation(fields: [agenciaId], references: [id])
 
   actividades      Actividad[]
   documentos       Documento[]
   mensajesWhatsApp MensajeWhatsApp[]
+  tareas           Tarea[]
 }
 
 model ContratoMandato {
@@ -258,6 +296,9 @@ model ContratoMandato {
   urlDocumento     String?
   notas            String?
   creadoEn         DateTime  @default(now())
+
+  agenciaId   String?
+  agencia     Agencia? @relation(fields: [agenciaId], references: [id])
 }
 
 model Documento {
@@ -269,8 +310,11 @@ model Documento {
   urlDrive            String?
   driveFileId         String?
   estadoProcesamiento String  @default("PENDIENTE")
-  datosExtraidos      String? // JSON de la extracción IA  
+  datosExtraidos      String?
   errorProcesamiento  String?
+
+  agenciaId     String?
+  agencia       Agencia?     @relation(fields: [agenciaId], references: [id])
 
   propiedadId   String?
   propiedad     Propiedad?   @relation(fields: [propiedadId], references: [id])
@@ -286,9 +330,12 @@ model Documento {
 
 model Actividad {
   id          String   @id @default(cuid())
-  tipo        String // LLAMADA, EMAIL, VISITA, NOTA, TAREA
+  tipo        String
   descripcion String
   fecha       DateTime @default(now())
+
+  agenciaId   String?
+  agencia     Agencia?   @relation(fields: [agenciaId], references: [id])
 
   propiedadId String?
   propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
@@ -300,10 +347,10 @@ model Actividad {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  accion    String // CREATE, UPDATE, DELETE
-  entidad   String // Propiedad, Cliente, etc.
+  accion    String
+  entidad   String
   entidadId String
-  datos     String? // snapshot antes/después
+  datos     String?
   ip        String?
   fecha     DateTime @default(now())
 
@@ -316,7 +363,7 @@ model AuditLog {
 model ReservaExterna {
   id          String   @id @default(cuid())
   uid         String
-  origen      String // AIRBNB | BOOKING
+  origen      String
   fechaInicio DateTime
   fechaFin    DateTime
   titulo      String?
@@ -333,11 +380,14 @@ model PublicacionPortal {
   propiedadId String
   propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
 
-  portal           String // idealista | fotocasa | james_edition | kyero
-  estado           String    @default("NO_PUBLICADO") // NO_PUBLICADO | PUBLICANDO | PUBLICADO | ERROR
-  urlPublicacion   String? // URL de la propiedad en el portal
-  idExterno        String? // ID que asigna el portal a la propiedad
-  errores          String? // JSON con errores de sync
+  agenciaId String?
+  agencia   Agencia? @relation(fields: [agenciaId], references: [id])
+
+  portal           String
+  estado           String    @default("NO_PUBLICADO")
+  urlPublicacion   String?
+  idExterno        String?
+  errores          String?
   ultimoSync       DateTime?
   fechaPublicacion DateTime?
   creadoEn         DateTime  @default(now())
@@ -351,7 +401,7 @@ model MensajeWhatsApp {
   id        String   @id @default(cuid())
   clienteId String
   cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  rol       String // "user" (cliente) o "assistant" (IA/agente)
+  rol       String
   contenido String
   creadoEn  DateTime @default(now())
 
@@ -369,18 +419,78 @@ model ConfiguracionAgencia {
   emailOficial    String?
   logoUrl         String?
   watermarkUrl    String?
+  firmaUrl        String?
+  iban            String?
   colorPrincipal  String? @default("#1890ff")
+  webUrl          String?
+  instagram       String?
+  facebook        String?
+  linkedin        String?
+  idiomaPrincipal String? @default("es")
+  tokensPortales    String?
+  configFacturacion String?
 
-  // Enlaces y Redes
-  webUrl    String?
-  instagram String?
-  facebook  String?
-  linkedin  String?
-
-  // Configuraciones del Sistema
-  tokensPortales    String? // JSON con tokens para Idealista, Fotocasa, etc.
-  configFacturacion String? // JSON con prefijos de factura, IRPF, etc.
+  agenciaId String?
+  agencia   Agencia? @relation(fields: [agenciaId], references: [id])
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
+}
+
+model Catalogo {
+  id            String    @id @default(cuid())
+  agenciaId     String
+  agencia       Agencia   @relation(fields: [agenciaId], references: [id])
+  nombre        String
+  token         String    @unique
+  vistas        Int       @default(0)
+  ultimoAcceso  DateTime?
+  expiraEn      DateTime?
+  creadoEn      DateTime  @default(now())
+  
+  propiedades   CatalogoPropiedad[]
+}
+
+model CatalogoPropiedad {
+  id          String    @id @default(cuid())
+  catalogoId  String
+  catalogo    Catalogo  @relation(fields: [catalogoId], references: [id], onDelete: Cascade)
+  propiedadId String
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  
+  @@unique([catalogoId, propiedadId])
+}
+
+model Notificacion {
+  id        String   @id @default(cuid())
+  tipo      String   // INFO | ALERTA | NUEVO_LEAD | IMPAGO | VENCIMIENTO
+  titulo    String
+  mensaje   String
+  leida     Boolean  @default(false)
+  enlace    String?
+  creadoEn  DateTime @default(now())
+
+  agenciaId String?
+  agencia   Agencia? @relation(fields: [agenciaId], references: [id], onDelete: Cascade)
+}
+
+model Tarea {
+  id               String   @id @default(cuid())
+  titulo           String
+  descripcion      String?
+  fechaVencimiento DateTime
+  tipo             String   @default("VISITA") // VISITA | LLAMADA | EMAIL | REUNION | OTRO
+  completada       Boolean  @default(false)
+  prioridad        String   @default("MEDIA") // BAJA | MEDIA | ALTA
+  creadoEn         DateTime @default(now())
+  actualizadoEn    DateTime @updatedAt
+
+  agenciaId   String?
+  agencia     Agencia?   @relation(fields: [agenciaId], references: [id], onDelete: Cascade)
+  clienteId   String?
+  cliente     Cliente?   @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  propiedadId String?
+  propiedad   Propiedad? @relation(fields: [propiedadId], references: [id], onDelete: SetNull)
+  usuarioId   String?
+  usuario     Usuario?   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 }

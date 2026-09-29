@@ -29,6 +29,21 @@ export function AuthProvider({ children }) {
     return data.usuario;
   };
 
+  // Nuevo: login con email + contraseña
+  const loginWithEmail = async (email, password) => {
+    const data = await authApi.loginEmail(email, password);
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    localStorage.setItem('user', JSON.stringify(data.usuario));
+    setUser(data.usuario);
+    return data.usuario;
+  };
+
+  // Nuevo: registro de nueva agencia
+  const register = async (datos) => {
+    return await authApi.register(datos);
+  };
+
   const devLogin = async () => {
     const data = await authApi.devLogin();
     localStorage.setItem('accessToken', data.accessToken);
@@ -44,7 +59,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, devLogin, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithEmail, register, devLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

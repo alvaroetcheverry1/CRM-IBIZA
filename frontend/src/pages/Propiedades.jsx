@@ -2,9 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { propiedadesApi, propietariosApi } from '../services/api';
-import { MapPin, Bed, Bath, Square, Plus, Search, X, Loader2, FileText, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { MapPin, Bed, Bath, Square, Plus, Search, X, Loader2, FileText, Image as ImageIcon, ChevronDown, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ModalCrearPropiedadUnificado from '../components/ModalCrearPropiedadUnificado';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import * as XLSX from 'xlsx';
 
 const TIPO_LABEL = { VACACIONAL: 'Vacacional', LARGA_DURACION: 'Larga Duración', VENTA: 'Venta' };
 const ESTADO_BADGE = {
@@ -41,7 +45,11 @@ function PropertyCard({ p, onClick }) {
       if (Array.isArray(parsed)) {
         images = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
       }
-    } catch(e) {}
+    } catch(e) {
+      if (typeof p.fotos === 'string') {
+        images = p.fotos.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
   }
   
   if (images.length === 0 && p.fotoPrincipal) {
@@ -50,6 +58,12 @@ function PropertyCard({ p, onClick }) {
   if (images.length === 0 && p.documentos && p.documentos[0]?.urlDrive) {
     images.push(p.documentos[0].urlDrive);
   }
+
+  const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+  images = images.map(url => {
+    if (url && url.startsWith('/')) return `${BACKEND_URL}${url}`;
+    return url;
+  });
   
   const [currentIdx, setCurrentIdx] = useState(0);
 
@@ -117,6 +131,62 @@ function PropertyCard({ p, onClick }) {
   );
 }
 
+// ─── Componente de Mapa ──────────────────────────────────────────────────────────
+function MapView({ propiedades, navigate }) {
+  const center = [38.9067, 1.4206]; // Centro de Ibiza
+
+  return (
+    <div style={{ height: '600px', width: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', border: '1px solid #CBD5E1', marginBottom: '2rem' }}>
+      <MapContainer center={center} zoom={11} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {propiedades.map(p => {
+          const lat = parseFloat(p.latitud);
+          const lng = parseFloat(p.longitud);
+          if (isNaN(lat) || isNaN(lng)) return null;
+
+          const color = p.tipo === 'VACACIONAL' ? '#4A6FA5' : p.tipo === 'LARGA_DURACION' ? '#1A3A5C' : '#C9A84C';
+          const customIcon = L.divIcon({
+            html: `<div style="background-color: ${color}; width: 16px; height: 16px; border: 2.5px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;"></div>`,
+            className: 'custom-map-pin',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+
+          return (
+            <Marker key={p.id} position={[lat, lng]} icon={customIcon}>
+              <Popup>
+                <div style={{ width: '200px', fontFamily: 'sans-serif' }}>
+                  {p.fotoPrincipal && (
+                    <img 
+                      src={p.fotoPrincipal} 
+                      alt={p.nombre} 
+                      style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} 
+                    />
+                  )}
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#1A3A5C' }}>{p.nombre}</h4>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#8A9BB0' }}>{p.zona}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{formatMoney(getPrecio(p))}</span>
+                    <button 
+                      onClick={() => navigate(`/propiedades/${p.id}`)}
+                      style={{ background: '#1A3A5C', color: 'white', border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '0.7rem', cursor: 'pointer' }}
+                    >
+                      Ver Detalle
+                    </button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+    </div>
+  );
+}
+
 // ─── Modal Nueva Propiedad ────────────────────────────────────────────────────
 // (Movido a ModalCrearPropiedadUnificado.jsx)
 
@@ -129,6 +199,13 @@ export default function Propiedades() {
   const [estado, setEstado] = useState('');
   const [page, setPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
+  const [habs, setHabs] = useState('');
+  const [banos, setBanos] = useState('');
+  const [piscina, setPiscina] = useState('');
+  const [minPrecio, setMinPrecio] = useState('');
+  const [maxPrecio, setMaxPrecio] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   // Debounce simple para la búsqueda
   useEffect(() => {
@@ -140,11 +217,64 @@ export default function Propiedades() {
   }, [search]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['propiedades', tipo, estado, page, debouncedSearch],
-    queryFn: () => propiedadesApi.list({ tipo: tipo || undefined, estado: estado || undefined, search: debouncedSearch || undefined, page, limit: 12 }),
+    queryKey: ['propiedades', tipo, estado, page, debouncedSearch, habs, banos, piscina, minPrecio, maxPrecio],
+    queryFn: () => propiedadesApi.list({ 
+      tipo: tipo || undefined, 
+      estado: estado || undefined, 
+      search: debouncedSearch || undefined, 
+      page, 
+      limit: 12,
+      habitaciones: habs ? parseInt(habs, 10) : undefined,
+      banos: banos ? parseInt(banos, 10) : undefined,
+      piscina: piscina || undefined,
+      precioMin: minPrecio ? parseFloat(minPrecio) : undefined,
+      precioMax: maxPrecio ? parseFloat(maxPrecio) : undefined
+    }),
   });
 
   const propiedades = data?.data || [];
+
+  const handleExportExcel = () => {
+    toast.success('Generando archivo Excel de propiedades...');
+    try {
+      const dataToExport = propiedades.map(p => ({
+        'Referencia': p.referencia,
+        'Nombre': p.nombre,
+        'Tipo': TIPO_LABEL[p.tipo] || p.tipo,
+        'Estado': p.estado,
+        'Zona': p.zona,
+        'Municipio': p.municipio || '—',
+        'Habitaciones': p.habitaciones || 0,
+        'Baños': p.banos || 0,
+        'm² Construidos': p.metrosConstruidos || 0,
+        'm² Parcela': p.metrosParcela || '—',
+        'Precio': getPrecio(p),
+        'Licencia ETV': p.alquilerVacacional?.licenciaETV || '—',
+        'Propietario': p.propietario ? `${p.propietario.nombre} ${p.propietario.apellidos || ''}` : '—',
+        'Descripción': p.descripcion || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Propiedades");
+      
+      // Auto-ajustar columnas
+      const maxLen = {};
+      dataToExport.forEach(row => {
+        Object.keys(row).forEach(key => {
+          const val = String(row[key] || '');
+          maxLen[key] = Math.max(maxLen[key] || 10, val.length);
+        });
+      });
+      worksheet['!cols'] = Object.keys(maxLen).map(key => ({ wch: maxLen[key] + 3 }));
+
+      XLSX.writeFile(workbook, `Propiedades_CRM_Ibiza_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success('Excel de propiedades descargado');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al exportar propiedades a Excel');
+    }
+  };
 
   return (
     <div>
@@ -164,7 +294,26 @@ export default function Propiedades() {
           <h2>Propiedades</h2>
           <p>Portfolio completo — {data?.meta?.total ?? 0} propiedades</p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', borderRadius: '8px', border: '1px solid #CBD5E1', overflow: 'hidden', marginRight: '0.5rem' }}>
+            <button
+              className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setViewMode('grid')}
+              style={{ borderRadius: 0, border: 'none', padding: '0.4rem 0.8rem' }}
+            >
+              📋 Lista
+            </button>
+            <button
+              className={`btn btn-sm ${viewMode === 'map' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setViewMode('map')}
+              style={{ borderRadius: 0, border: 'none', padding: '0.4rem 0.8rem' }}
+            >
+              🗺️ Mapa
+            </button>
+          </div>
+          <button className="btn btn-outline" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FileText size={16} /> Exportar Excel
+          </button>
           <button
             className="btn btn-primary"
             onClick={() => setShowCreateModal(true)}
@@ -176,7 +325,7 @@ export default function Propiedades() {
       </div>
 
       {/* Filters */}
-      <div className="filters-bar">
+      <div className="filters-bar" style={{ marginBottom: '0.5rem' }}>
         <div className="search-input-wrap">
           <Search size={15} className="search-icon" />
           <input
@@ -206,19 +355,108 @@ export default function Propiedades() {
         ))}
       </div>
 
+      {/* Botón de Filtros Avanzados */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button 
+          onClick={() => setShowAdvanced(!showAdvanced)} 
+          className="btn btn-outline btn-sm"
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+        >
+          <Filter size={14} /> {showAdvanced ? 'Ocultar Filtros' : 'Filtros Avanzados'}
+        </button>
+      </div>
+
+      {/* Panel de Filtros Avanzados */}
+      {showAdvanced && (
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
+          <h4 style={{ color: '#1A3A5C', marginBottom: '1rem', marginTop: 0 }}>Filtros Avanzados</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Habitaciones (mínimo)</label>
+              <input 
+                type="number" 
+                min="0" 
+                className="form-input" 
+                placeholder="Ej. 3" 
+                value={habs}
+                onChange={e => { setHabs(e.target.value); setPage(1); }}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Baños (mínimo)</label>
+              <input 
+                type="number" 
+                min="0" 
+                className="form-input" 
+                placeholder="Ej. 2" 
+                value={banos}
+                onChange={e => { setBanos(e.target.value); setPage(1); }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Piscina</label>
+              <select 
+                className="form-select" 
+                value={piscina}
+                onChange={e => { setPiscina(e.target.value); setPage(1); }}
+              >
+                <option value="">Cualquiera</option>
+                <option value="SI">Sí</option>
+                <option value="NO">No</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Precio Mínimo (€)</label>
+              <input 
+                type="number" 
+                min="0" 
+                className="form-input" 
+                placeholder="Ej. 1000" 
+                value={minPrecio}
+                onChange={e => { setMinPrecio(e.target.value); setPage(1); }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Precio Máximo (€)</label>
+              <input 
+                type="number" 
+                min="0" 
+                className="form-input" 
+                placeholder="Ej. 500000" 
+                value={maxPrecio}
+                onChange={e => { setMaxPrecio(e.target.value); setPage(1); }}
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <button 
+              className="btn btn-ghost btn-sm" 
+              onClick={() => {
+                setHabs('');
+                setBanos('');
+                setPiscina('');
+                setMinPrecio('');
+                setMaxPrecio('');
+                setPage(1);
+              }}
+              style={{ color: '#EF4444', padding: '0.25rem 0.5rem', fontSize: '0.78rem' }}
+            >
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="loading-page" style={{ minHeight: 300 }}>
           <div className="spinner" />
         </div>
-      ) : propiedades.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon" style={{ fontSize: '2rem' }}>🏠</div>
-          <h3>Sin propiedades</h3>
-          <p>Añade tu primera propiedad al portfolio</p>
-          <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setShowCreateModal(true)}>
-            <Plus size={16} /> Nueva Propiedad
-          </button>
-        </div>
+      ) : viewMode === 'map' ? (
+        <MapView propiedades={propiedades} navigate={navigate} />
       ) : (
         <>
           <div className="properties-grid">

@@ -6,6 +6,9 @@ import {
   CheckCircle, Clock, FileText, X, Save, Trash2, Loader2 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 // ─── Componentes auxiliares ──────────────────────────────
 const ESTADO_BADGE = {
@@ -327,6 +330,181 @@ export default function Facturacion() {
   const [searchTerm, setSearchTerm] = useState('');
   const [uploadingId, setUploadingId] = useState(null);
 
+  const handleExportExcel = () => {
+    toast.success('Generando archivo Excel...');
+    try {
+      const dataToExport = filteredFacturas.map(f => ({
+        'Nº Factura': f.numero,
+        'Estado': f.estado,
+        'Fecha Emisión': formatDate(f.fechaEmision),
+        'Fecha Vencimiento': formatDate(f.fechaVencimiento),
+        'Cliente': f.cliente ? `${f.cliente.nombre} ${f.cliente.apellidos}` : '-',
+        'Propiedad Asociada': f.propiedad ? f.propiedad.nombre : '-',
+        'Subtotal': f.subtotal,
+        'Impuestos': f.totalImpuestos,
+        'Total': f.total,
+        'Notas': f.notas || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas");
+      
+      // Ajuste automático de columnas
+      const maxLen = {};
+      dataToExport.forEach(row => {
+        Object.keys(row).forEach(key => {
+          const val = String(row[key] || '');
+          maxLen[key] = Math.max(maxLen[key] || 10, val.length);
+        });
+      });
+      worksheet['!cols'] = Object.keys(maxLen).map(key => ({ wch: maxLen[key] + 3 }));
+
+      XLSX.writeFile(workbook, `Facturas_CRM_Ibiza_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success('Excel descargado correctamente');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al exportar a Excel');
+    }
+  };
+
+  const handleDownloadPDF = (f, e) => {
+    e.stopPropagation();
+    toast.success('Generando factura en PDF...');
+
+    try {
+      const doc = new jsPDF();
+      
+      // Colores de la paleta
+      const primaryColor = [26, 58, 92]; // #1A3A5C
+      const goldColor = [201, 168, 76];   // #C9A84C
+      const darkColor = [33, 37, 41];
+      const lightGray = [241, 245, 249];
+
+      // Título y Cabecera de la Agencia
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, 210, 40, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text('IBIZA LUXURY DREAMS', 15, 20);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text('CRM Real Estate & Luxury Services', 15, 28);
+      doc.text('Ibiza, España | info@ibizaluxurydreams.com', 15, 34);
+
+      doc.setTextColor(...goldColor);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('FACTURA', 155, 25);
+
+      // Info de Factura y Cliente (dos columnas)
+      doc.setTextColor(...darkColor);
+      
+      // Izquierda: Cliente
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('FACTURADO A:', 15, 52);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const clienteNombre = f.cliente ? `${f.cliente.nombre} ${f.cliente.apellidos}` : 'Cliente General';
+      const clienteEmail = f.cliente?.email || 'N/A';
+      doc.text(clienteNombre, 15, 58);
+      doc.text(`Email: ${clienteEmail}`, 15, 64);
+      if (f.propiedad) {
+        doc.text(`Propiedad: ${f.propiedad.nombre}`, 15, 70);
+      }
+
+      // Derecha: Factura
+      doc.setFont('helvetica', 'bold');
+      doc.text('DETALLES DE FACTURA:', 120, 52);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nº Factura: ${f.numero || 'BORRADOR'}`, 120, 58);
+      doc.text(`Fecha Emisión: ${formatDate(f.fechaEmision)}`, 120, 64);
+      doc.text(`Fecha Vencimiento: ${formatDate(f.fechaVencimiento)}`, 120, 70);
+      doc.text(`Estado: ${f.estado}`, 120, 76);
+
+      // Línea divisoria
+      doc.setDrawColor(226, 232, 240);
+      doc.line(15, 84, 195, 84);
+
+      // Tabla de Conceptos
+      const headers = [['Descripción', 'Cant.', 'Precio Unit.', 'IVA %', 'Total']];
+      const rows = (f.conceptos || []).map(c => {
+        const totalConcepto = (c.cantidad * c.precioUnitario) * (1 + c.impuestoPorcentaje / 100);
+        return [
+          c.descripcion,
+          c.cantidad,
+          formatMoney(c.precioUnitario),
+          `${c.impuestoPorcentaje}%`,
+          formatMoney(totalConcepto)
+        ];
+      });
+
+      doc.autoTable({
+        startY: 90,
+        head: headers,
+        body: rows,
+        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: lightGray },
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: {
+          0: { width: 90 },
+          1: { halign: 'center', width: 15 },
+          2: { halign: 'right', width: 25 },
+          3: { halign: 'center', width: 20 },
+          4: { halign: 'right', width: 30 }
+        }
+      });
+
+      // Se calcula el final de la tabla
+      let finalY = doc.lastAutoTable.finalY + 10;
+      if (finalY > 250) {
+        doc.addPage();
+        finalY = 20;
+      }
+
+      // Bloque de Totales (a la derecha)
+      const xOffset = 130;
+      doc.setFillColor(...lightGray);
+      doc.rect(xOffset - 5, finalY - 5, 70, 32, 'F');
+      
+      doc.setTextColor(...darkColor);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Subtotal:', xOffset, finalY + 2);
+      doc.text(formatMoney(f.subtotal), 195, finalY + 2, { align: 'right' });
+
+      doc.text('Impuestos:', xOffset, finalY + 8);
+      doc.text(formatMoney(f.totalImpuestos), 195, finalY + 8, { align: 'right' });
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('TOTAL:', xOffset, finalY + 18);
+      doc.setTextColor(...primaryColor);
+      doc.text(formatMoney(f.total), 195, finalY + 18, { align: 'right' });
+
+      // Notas al Pie
+      if (f.notas) {
+        doc.setTextColor(100, 116, 139);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text('Términos y condiciones:', 15, finalY + 26);
+        const splitNotas = doc.splitTextToSize(f.notas, 110);
+        doc.text(splitNotas, 15, finalY + 31);
+      }
+
+      // Guardar PDF
+      doc.save(`Factura_${f.numero || 'Borrador'}.pdf`);
+      toast.success('Factura descargada con éxito');
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al generar el PDF de la factura');
+    }
+  };
+
   // Queries
   const { data: facturasData, isLoading } = useQuery({
     queryKey: ['facturas'],
@@ -437,7 +615,10 @@ export default function Facturacion() {
           <h2>Facturación y Finanzas</h2>
           <p>Gestiona los cobros, facturas emitidas y honorarios comerciales.</p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-outline" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FileText size={16} /> Exportar Excel
+          </button>
           <button className="btn btn-primary" onClick={openCreateModal}>
             <Plus size={16} /> Nueva Factura
           </button>
@@ -537,8 +718,8 @@ export default function Facturacion() {
                           </button>
                           <button 
                             className="btn-icon btn-ghost" 
-                            title="Descargar PDF (Simulado)"
-                            onClick={(e) => { e.stopPropagation(); toast.success('Descargando factura en PDF...'); }}
+                            title="Descargar PDF"
+                            onClick={(e) => handleDownloadPDF(f, e)}
                           >
                             <Download size={16} />
                           </button>

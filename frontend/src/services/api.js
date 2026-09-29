@@ -12,7 +12,7 @@ function getToken() {
 }
 
 /** Helper para llamadas HTTP autenticadas al backend real */
-async function apiCall(path, options = {}) {
+export async function apiCall(path, options = {}) {
   const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
@@ -22,13 +22,20 @@ async function apiCall(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/registro') {
+        window.location.href = '/login';
+      }
+    }
     throw new Error(body.error || body.detail || `HTTP ${res.status}`);
   }
   return res.json();
 }
 
 /** Helper para subidas multipart (FormData) */
-async function apiUpload(path, formData) {
+export async function apiUpload(path, formData) {
   const token = getToken();
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -50,6 +57,18 @@ export const authApi = {
       body: JSON.stringify({ credential }),
     });
   },
+  loginEmail: async (email, password) => {
+    return await apiCall('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  },
+  register: async (datos) => {
+    return await apiCall('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    });
+  },
   devLogin: async () => {
     return await apiCall('/auth/dev-login', { method: 'POST', body: JSON.stringify({}) });
   },
@@ -59,6 +78,26 @@ export const authApi = {
   me: async () => {
     return await apiCall('/auth/me');
   },
+};
+
+// ─── Admin API ────────────────────────────────────────────────────────────────
+export const adminApi = {
+  getAgencias: () => apiCall('/admin/agencias'),
+  getAgencia: (id) => apiCall(`/admin/agencias/${id}`),
+  createAgencia: (data) => apiCall('/admin/agencias', { method: 'POST', body: JSON.stringify(data) }),
+  getStats: () => apiCall('/admin/stats'),
+  activarAgencia: (id, plan) => apiCall(`/admin/agencias/${id}/activar`, { method: 'PUT', body: JSON.stringify({ plan }) }),
+  suspenderAgencia: (id, motivo) => apiCall(`/admin/agencias/${id}/suspender`, { method: 'PUT', body: JSON.stringify({ motivo }) }),
+  cambiarPlan: (id, plan) => apiCall(`/admin/agencias/${id}/plan`, { method: 'PUT', body: JSON.stringify({ plan }) }),
+  eliminarAgencia: (id) => apiCall(`/admin/agencias/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Usuarios API ─────────────────────────────────────────────────────────────
+export const usuariosApi = {
+  list: () => apiCall('/usuarios'),
+  create: (data) => apiCall('/usuarios', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiCall(`/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => apiCall(`/usuarios/${id}`, { method: 'DELETE' }),
 };
 
 // ─── Dashboard ────────────────────────────────────────────
@@ -82,14 +121,8 @@ export const propiedadesApi = {
       ).toString();
       return await apiCall(`/propiedades${qs ? '?' + qs : ''}`);
     } catch (err) {
-      console.warn('Propiedades API error, usando mock:', err.message);
-      await delay();
-      let data = [...MOCK_DATA.propiedades];
-      if (params.tipo) data = data.filter(p => p.tipo === params.tipo);
-      if (params.estado) data = data.filter(p => p.estado === params.estado);
-      const limit = params.limit || 20;
-      const page = params.page || 1;
-      return { data: data.slice((page - 1) * limit, page * limit), meta: { total: data.length, page, limit, totalPages: Math.ceil(data.length / limit) } };
+      console.error('Propiedades API error:', err.message);
+      throw err;
     }
   },
   get: async (id) => {
@@ -111,6 +144,9 @@ export const propiedadesApi = {
   },
   delete: async (id) => {
     return await apiCall(`/propiedades/${id}`, { method: 'DELETE' });
+  },
+  generarDescripcion: async (id, notas) => {
+    return await apiCall(`/propiedades/${id}/generar-descripcion`, { method: 'POST', body: JSON.stringify({ notas }) });
   },
 };
 
@@ -219,10 +255,21 @@ export const documentosApi = {
 
 // ─── Reservas ─────────────────────────────────────────────
 export const reservasApi = {
-  list: async () => { await delay(); return { data: MOCK_DATA.reservas }; },
-  create: async (data) => { await delay(); const n = { ...data, id: String(Date.now()) }; MOCK_DATA.reservas.push(n); return n; },
-  update: async (_id, data) => { await delay(); return data; },
-  delete: async (_id) => { await delay(); return { message: 'Eliminado' }; },
+  list: async (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
+    ).toString();
+    return apiCall(`/reservas${qs ? '?' + qs : ''}`);
+  },
+  create: async (data) => {
+    return apiCall('/reservas', { method: 'POST', body: JSON.stringify(data) });
+  },
+  update: async (id, data) => {
+    return apiCall(`/reservas/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  },
+  delete: async (id) => {
+    return apiCall(`/reservas/${id}`, { method: 'DELETE' });
+  },
 };
 
 // ─── Pagos ────────────────────────────────────────────────
@@ -279,40 +326,32 @@ export const facturasApi = {
   }
 };
 
+export const propuestasApi = {
+  enviarDisponibilidad: (data) => apiCall('/propuestas/enviar-disponibilidad', { method: 'POST', body: JSON.stringify(data) }),
+};
+
 export const matchmakingApi = {
-  getMatches: async (propiedadId) => {
-    const res = await fetch(`${BASE_URL}/matchmaking/${propiedadId}`, getHeaders());
-    if (!res.ok) throw new Error('Error al obtener matches');
-    return res.json();
-  },
-  getMatchesForCliente: async (clienteId) => {
-    const res = await fetch(`${BASE_URL}/matchmaking/cliente/${clienteId}`, getHeaders());
-    if (!res.ok) throw new Error('Error al obtener matches del cliente');
-    return res.json();
-  },
-  generarPitch: async (data) => {
-    const res = await fetch(`${BASE_URL}/matchmaking/generar-pitch`, {
-      ...getHeaders(),
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Error al generar pitch IA');
-    return res.json();
-  },
-  enviarDossier: async (data) => {
-    const res = await fetch(`${BASE_URL}/matchmaking/enviar-dossier`, {
-      ...getHeaders(),
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Error al enviar dossier');
-    return res.json();
-  }
+  getMatches: (propiedadId) => apiCall(`/matchmaking/${propiedadId}`),
+  getMatchesForCliente: (clienteId) => apiCall(`/matchmaking/cliente/${clienteId}`),
+  generarPitch: (data) => apiCall('/matchmaking/generar-pitch', { method: 'POST', body: JSON.stringify(data) }),
+  enviarDossier: (data) => apiCall('/matchmaking/enviar-dossier', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const icalApi = {
   sync: (data) => apiCall('/ical/sync', { method: 'POST', body: JSON.stringify(data) }),
   getReservas: (propiedadId) => apiCall(`/ical/${propiedadId}`),
+};
+
+export const tareasApi = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
+    ).toString();
+    return apiCall(`/tareas${qs ? '?' + qs : ''}`);
+  },
+  create: (data) => apiCall('/tareas', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiCall(`/tareas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => apiCall(`/tareas/${id}`, { method: 'DELETE' }),
 };
 
 // ─── Actividades / Historial ──────────────────────────────────
@@ -342,6 +381,14 @@ export const whatsappApi = {
   getLeadsRecientes: () => apiCall('/whatsapp/leads-recientes'),
   getHistorial: (clienteId) => apiCall(`/whatsapp/historial/${clienteId}`),
   enviarMensajeReal: (clienteId, mensaje) => apiCall('/whatsapp/enviar', { method: 'POST', body: JSON.stringify({ clienteId, mensaje }) })
+};
+
+// ─── Catálogos Inteligentes ─────────────────────────────────
+export const catalogosApi = {
+  list: () => apiCall('/catalogos'),
+  create: (data) => apiCall('/catalogos', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id) => apiCall(`/catalogos/${id}`, { method: 'DELETE' }),
+  getPublic: (token) => apiCall(`/catalogos/public/${token}`),
 };
 
 export default {};

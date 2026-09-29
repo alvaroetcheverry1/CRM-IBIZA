@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -21,13 +22,18 @@ const titles = {
 export default function Layout() {
   const location = useLocation();
   const pageInfo = titles[location.pathname] || { title: 'CRM Inmobiliario', subtitle: '' };
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="app-layout">
-      <Sidebar />
+    <div className={`app-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-content">
-        <Topbar title={pageInfo.title} subtitle={pageInfo.subtitle} />
-        <main className="page-content">
+        <Topbar 
+          title={pageInfo.title} 
+          subtitle={pageInfo.subtitle} 
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+        <main className="page-content" onClick={() => setSidebarOpen(false)}>
           <Outlet />
         </main>
       </div>

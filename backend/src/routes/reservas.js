@@ -5,27 +5,89 @@ const { prisma } = require('../utils/prisma');
 
 // Reservas - GET /api/reservas
 router.get('/', authenticate, async (req, res) => {
-  const { propiedadId, desde, hasta } = req.query;
-  const where = {};
-  if (propiedadId) {
-    where.alquilerVacacional = { propiedadId };
-  }
-  if (desde || hasta) {
-    where.fechaEntrada = {};
-    if (desde) where.fechaEntrada.gte = new Date(desde);
-    if (hasta) where.fechaEntrada.lte = new Date(hasta);
-  }
+  try {
+    const { propiedadId, propiedadesIds, desde, hasta } = req.query;
+    
+    let idsArray = [];
+    if (propiedadesIds) {
+      idsArray = propiedadesIds.split(',');
+    } else if (propiedadId) {
+      idsArray = [propiedadId];
+    }
 
-  const reservas = await prisma.reserva.findMany({
-    where,
-    orderBy: { fechaEntrada: 'asc' },
-    include: {
-      alquilerVacacional: {
-        include: { propiedad: { select: { nombre: true, referencia: true, fotoPrincipal: true } } },
-      },
-    },
-  });
-  res.json({ data: reservas });
+    // Filtros de fecha
+    const parsedDesde = desde ? new Date(desde) : null;
+    const parsedHasta = hasta ? new Date(hasta) : null;
+
+    // 1. Reservas directas (prisma.reserva)
+    const whereReserva = {};
+    if (idsArray.length > 0) {
+      whereReserva.alquilerVacacional = { propiedadId: { in: idsArray } };
+    }
+    if (parsedDesde || parsedHasta) {
+      // Overlap checking: reserva.fechaEntrada <= hasta AND reserva.fechaSalida >= desde
+      whereReserva.AND = [];
+      if (parsedDesde) {
+        whereReserva.AND.push({ fechaSalida: { gte: parsedDesde } });
+      }
+      if (parsedHasta) {
+        whereReserva.AND.push({ fechaEntrada: { lte: parsedHasta } });
+      }
+    }
+
+    const reservasDirectas = await prisma.reserva.findMany({
+      where: whereReserva,
+      orderBy: { fechaEntrada: 'asc' },
+      include: {
+        alquilerVacacional: true
+      }
+    });
+
+    // 2. Reservas externas (prisma.reservaExterna)
+    const whereExterna = {};
+    if (idsArray.length > 0) {
+      whereExterna.propiedadId = { in: idsArray };
+    }
+    if (parsedDesde || parsedHasta) {
+      // Overlap checking: externa.fechaInicio <= hasta AND externa.fechaFin >= desde
+      whereExterna.AND = [];
+      if (parsedDesde) {
+        whereExterna.AND.push({ fechaFin: { gte: parsedDesde } });
+      }
+      if (parsedHasta) {
+        whereExterna.AND.push({ fechaInicio: { lte: parsedHasta } });
+      }
+    }
+
+    const reservasExternas = await prisma.reservaExterna.findMany({
+      where: whereExterna,
+      orderBy: { fechaInicio: 'asc' }
+    });
+
+    // 3. Combinar y mapear a formato uniforme
+    const combinadas = [
+      ...reservasDirectas.map(r => ({
+        id: r.id,
+        propiedadId: r.alquilerVacacional?.propiedadId,
+        fechaEntrada: r.fechaEntrada,
+        fechaSalida: r.fechaSalida,
+        clienteNombre: r.clienteNombre,
+        origen: r.origen || 'DIRECTO'
+      })),
+      ...reservasExternas.map(r => ({
+        id: r.id,
+        propiedadId: r.propiedadId,
+        fechaEntrada: r.fechaInicio,
+        fechaSalida: r.fechaFin,
+        clienteNombre: r.titulo || 'Reserva Externa',
+        origen: r.origen || 'ICAl'
+      }))
+    ];
+
+    res.json({ data: combinadas });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/reservas

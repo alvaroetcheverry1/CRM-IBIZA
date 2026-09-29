@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { propiedadesApi, icalApi } from '../services/api';
+import { propiedadesApi, icalApi, apiCall, propuestasApi } from '../services/api';
 import {
   ChevronLeft, ChevronRight, Calendar, Send, Search, Bed, Bath,
-  MapPin, Check, X, Mail, Loader2, UserCircle2, RefreshCcw
+  MapPin, Check, X, Mail, Loader2, UserCircle2, RefreshCcw, Map, Grid
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import toast from 'react-hot-toast';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -27,68 +28,6 @@ const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
 
 const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
-// Genera reservas ficticias para una propiedad dada
-function getMockReservas(propId, year, month, syncInfo = {}) {
-  const seed = propId.charCodeAt ? propId.charCodeAt(0) : parseInt(propId) || 1;
-  const days = getDaysInMonth(year, month);
-  const reservas = [];
-  
-  // Reservas Directas (CRM)
-  const numRes = (seed % 3) + 1;
-  let day = (seed % 5) + 3;
-  for (let i = 0; i < numRes && day <= days; i++) {
-    const len = ((seed + i * 7) % 6) + 3; 
-    const end = Math.min(day + len - 1, days);
-    reservas.push({ inicio: day, fin: end, huespedes: (seed + i) % 4 + 2, nombre: ['García Martínez', 'Müller Hans', 'Smith James', 'Dubois Pierre'][i % 4], origen: 'DIRECTO' });
-    day = end + 3;
-  }
-
-  // Si está sincronizado con Airbnb, inyectar reservas Airbnb
-  if (syncInfo.airbnb) {
-    let ad = (seed % 4) + 1;
-    for (let i = 0; i < 2 && ad <= days; i++) {
-      if (!reservas.some(r => r.inicio <= ad && r.fin >= ad)) {
-        const len = (ad % 4) + 2;
-        const end = Math.min(ad + len - 1, days);
-        if (!reservas.some(r => r.inicio <= end && r.fin >= ad)) {
-           reservas.push({ inicio: ad, fin: end, huespedes: 2, nombre: 'Airbnb Guest', origen: 'AIRBNB' });
-        }
-      }
-      ad += 8;
-    }
-  }
-
-  // Si está sincronizado con Booking, inyectar reservas Booking
-  if (syncInfo.booking) {
-    let bd = (seed % 6) + 15;
-    if (bd <= days) {
-      if (!reservas.some(r => r.inicio <= bd && r.fin >= bd)) {
-        const len = (bd % 3) + 2;
-        const end = Math.min(bd + len - 1, days);
-        if (!reservas.some(r => r.inicio <= end && r.fin >= bd)) {
-           reservas.push({ inicio: bd, fin: end, huespedes: 2, nombre: 'Booking Guest', origen: 'BOOKING' });
-        }
-      }
-    }
-  }
-
-  // Si está sincronizado manual (Idealista), inyectar reservas
-  if (syncInfo.manual) {
-    let md = (seed % 8) + 10;
-    if (md <= days) {
-      if (!reservas.some(r => r.inicio <= md && r.fin >= md)) {
-        const len = (md % 5) + 2;
-        const end = Math.min(md + len - 1, days);
-        if (!reservas.some(r => r.inicio <= end && r.fin >= md)) {
-           reservas.push({ inicio: md, fin: end, huespedes: 4, nombre: 'Idealista Guest', origen: 'MANUAL' });
-        }
-      }
-    }
-  }
-
-  return reservas;
-}
-
 function getTemporada(month) {
   if ([6, 7, 8].includes(month)) return { label: 'T. Alta', color: '#DC2626', key: 'precioTemporadaAlta' };
   if ([4, 5, 9, 10].includes(month)) return { label: 'T. Media', color: '#D97706', key: 'precioTemporadaMedia' };
@@ -96,16 +35,21 @@ function getTemporada(month) {
 }
 
 // ─── Componente Calendario Mensual de Villa ───────────────────────────────────
-function MiniCalendario({ propiedad, year, month, syncInfo = {} }) {
+function MiniCalendario({ propiedad, year, month, reservas = [] }) {
   const days = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
-  const reservas = useMemo(() => getMockReservas(propiedad.id, year, month, syncInfo), [propiedad.id, year, month, syncInfo]);
   const temporada = getTemporada(month);
   const precio = propiedad.alquilerVacacional?.[temporada.key];
 
   function getDayStatus(d) {
+    const currentDate = new Date(year, month, d);
+    currentDate.setHours(0, 0, 0, 0);
     for (const r of reservas) {
-      if (d >= r.inicio && d <= r.fin) {
+      const start = new Date(r.fechaEntrada);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(r.fechaSalida);
+      end.setHours(0, 0, 0, 0);
+      if (currentDate >= start && currentDate <= end) {
         return { status: 'RESERVADO', origen: r.origen };
       }
     }
@@ -191,14 +135,24 @@ function EnviarOpcionesModal({ opciones, fechas, onClose }) {
   const [nombre, setNombre] = useState('');
   const [sending, setSending] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!email || !nombre) { toast.error('Introduce nombre y email del cliente'); return; }
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    try {
+      await propuestasApi.enviarDisponibilidad({
+        clienteEmail: email,
+        clienteNombre: nombre,
+        propiedadesIds: opciones.map(op => op.id),
+        fechaEntrada: fechas.entrada,
+        fechaSalida: fechas.salida
+      });
       toast.success(`${opciones.length} opciones enviadas a ${email} con éxito`);
       onClose();
-    }, 1800);
+    } catch (err) {
+      toast.error('Error al enviar propuesta: ' + err.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -378,6 +332,9 @@ export default function CalendarioVacacional() {
   const [month, setMonth] = useState(today.getMonth());
   const [searchQuery, setSearchQuery] = useState('');
   const [filtroHab, setFiltroHab] = useState('');
+  const [presupuestoMin, setPresupuestoMin] = useState('');
+  const [presupuestoMax, setPresupuestoMax] = useState('');
+  const [vista, setVista] = useState('grid');
   const [selectedVillas, setSelectedVillas] = useState(new Set());
   const [fechaEntrada, setFechaEntrada] = useState('');
   const [fechaSalida, setFechaSalida] = useState('');
@@ -408,6 +365,66 @@ export default function CalendarioVacacional() {
     return matchQ && matchHab;
   });
 
+  const { data: rawReservasData } = useQuery({
+    queryKey: ['reservas-calendario', year, month, propsFiltradas.map(p => p.id).join(','), fechaEntrada, fechaSalida],
+    queryFn: () => {
+      const ids = propsFiltradas.map(p => p.id).join(',');
+      if (!ids) return { data: [] };
+      let d = new Date(year, month, 1);
+      let h = new Date(year, month, getDaysInMonth(year, month));
+      if (fechaEntrada && new Date(fechaEntrada) < d) d = new Date(fechaEntrada);
+      if (fechaSalida && new Date(fechaSalida) > h) h = new Date(fechaSalida);
+      const desdeStr = d.toISOString().split('T')[0];
+      const hastaStr = h.toISOString().split('T')[0];
+      return apiCall(`/reservas?propiedadesIds=${ids}&desde=${desdeStr}&hasta=${hastaStr}`);
+    },
+    enabled: propsFiltradas.length > 0
+  });
+
+  const todasReservas = rawReservasData?.data || [];
+
+  const propiedadesProcesadas = useMemo(() => {
+    let list = propsFiltradas.map(p => {
+      let disponible = true;
+      let reservasDeEstaVilla = todasReservas.filter(r => r.propiedadId === p.id);
+      
+      if (fechaEntrada && fechaSalida) {
+        const ent = new Date(fechaEntrada);
+        const sal = new Date(fechaSalida);
+        const choque = reservasDeEstaVilla.some(r => {
+          const rEnt = new Date(r.fechaEntrada);
+          const rSal = new Date(r.fechaSalida);
+          return (ent < rSal && sal > rEnt);
+        });
+        if (choque) disponible = false;
+      }
+      return { ...p, disponibleParaFechas: disponible, reservas: reservasDeEstaVilla };
+    });
+
+    if (presupuestoMin || presupuestoMax) {
+      const min = parseInt(presupuestoMin) || 0;
+      const max = parseInt(presupuestoMax) || Infinity;
+      list = list.filter(p => {
+        const mesParaPrecio = fechaEntrada ? new Date(fechaEntrada).getMonth() : month;
+        const tmp = getTemporada(mesParaPrecio);
+        const precio = p.alquilerVacacional?.[tmp.key] || 0;
+        return precio >= min && precio <= max;
+      });
+    }
+
+    list.sort((a, b) => (a.disponibleParaFechas === b.disponibleParaFechas ? 0 : a.disponibleParaFechas ? -1 : 1));
+
+    return list;
+  }, [propsFiltradas, todasReservas, fechaEntrada, fechaSalida, presupuestoMin, presupuestoMax, month]);
+
+  const villasReservas = useMemo(() => {
+    const map = {};
+    for (const p of propiedadesProcesadas) {
+      map[p.id] = p.reservas;
+    }
+    return map;
+  }, [propiedadesProcesadas]);
+
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
     else setMonth(m => m - 1);
@@ -425,7 +442,7 @@ export default function CalendarioVacacional() {
     });
   };
 
-  const selectedList = propsFiltradas.filter(p => selectedVillas.has(p.id));
+  const selectedList = propiedadesProcesadas.filter(p => selectedVillas.has(p.id));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: 'calc(100vh - 140px)' }}>
@@ -454,50 +471,138 @@ export default function CalendarioVacacional() {
         </div>
       </div>
 
-      {/* ── Filtros ── */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
-          <input className="input" style={{ paddingLeft: 36, width: '100%' }} placeholder="Buscar villa o zona..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        </div>
-        <select className="input" value={filtroHab} onChange={e => setFiltroHab(e.target.value)} style={{ width: 'auto' }}>
-          <option value="">Todas las habitaciones</option>
-          <option value="2">≥ 2 hab.</option>
-          <option value="4">≥ 4 hab.</option>
-          <option value="6">≥ 6 hab.</option>
-          <option value="8">≥ 8 hab.</option>
-        </select>
+      {/* ── Filtros Avanzados (Glassmorphism) ── */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.6)',
+        borderRadius: '16px',
+        padding: '1rem 1.25rem',
+        boxShadow: '0 8px 32px rgba(13, 27, 42, 0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        marginBottom: '0.5rem'
+      }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          
+          <div style={{ position: 'relative', flex: '1 1 220px' }}>
+            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#8A9BB0' }} />
+            <input 
+              className="input" 
+              style={{ paddingLeft: 42, width: '100%', border: '1px solid #E2E8F0', background: 'rgba(255,255,255,0.8)', borderRadius: '12px', height: '42px', transition: 'all 0.2s', outline: 'none', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }} 
+              placeholder="Buscar villa, referencia o zona..." 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+            />
+          </div>
+          
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', flex: '1 1 auto' }}>
+            <div style={{ position: 'relative' }}>
+              <Bed size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#8A9BB0', pointerEvents: 'none' }} />
+              <select 
+                className="input" 
+                value={filtroHab} 
+                onChange={e => setFiltroHab(e.target.value)} 
+                style={{ paddingLeft: 38, border: '1px solid #E2E8F0', background: 'rgba(255,255,255,0.8)', borderRadius: '12px', height: '42px', outline: 'none', minWidth: '150px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', fontWeight: 500, color: '#475569' }}
+              >
+                <option value="">Habitaciones...</option>
+                <option value="2">≥ 2 habs.</option>
+                <option value="4">≥ 4 habs.</option>
+                <option value="6">≥ 6 habs.</option>
+                <option value="8">≥ 8 habs.</option>
+              </select>
+            </div>
 
-        {/* Navegación mes */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, padding: '4px 8px' }}>
-          <button className="btn btn-ghost btn-icon" onClick={prevMonth} style={{ padding: '4px 6px' }}><ChevronLeft size={16} /></button>
-          <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0F172A', minWidth: 140, textAlign: 'center' }}>
-            {MONTHS_ES[month]} {year}
-          </span>
-          <button className="btn btn-ghost btn-icon" onClick={nextMonth} style={{ padding: '4px 6px' }}><ChevronRight size={16} /></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.9)', border: '1px solid #E2E8F0', padding: '0 14px', borderRadius: '12px', height: '42px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+              <span style={{ color: '#475569', fontSize: '0.85rem', fontWeight: 600 }}>Presupuesto</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#F1F5F9', borderRadius: '8px', padding: '2px 4px' }}>
+                <input type="number" placeholder="Min" value={presupuestoMin} onChange={e => setPresupuestoMin(e.target.value)} style={{ width: '70px', height: '28px', border: 'none', background: 'transparent', padding: '0 6px', fontSize: '0.85rem', outline: 'none', textAlign: 'center', color: '#0F172A', fontWeight: 600 }} />
+                <span style={{ color: '#94A3B8', fontSize: '0.85rem', fontWeight: 400 }}>-</span>
+                <input type="number" placeholder="Max" value={presupuestoMax} onChange={e => setPresupuestoMax(e.target.value)} style={{ width: '70px', height: '28px', border: 'none', background: 'transparent', padding: '0 6px', fontSize: '0.85rem', outline: 'none', textAlign: 'center', color: '#0F172A', fontWeight: 600 }} />
+              </div>
+              <span style={{ color: '#475569', fontSize: '0.85rem', fontWeight: 600 }}>€</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.8)', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '3px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)', gap: '4px' }}>
+            <button className={`btn-icon ${vista === 'grid' ? 'btn-primary' : 'btn-ghost'}`} style={{ borderRadius: '8px', padding: '6px 12px', height: '34px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setVista('grid')} title="Vista Grid">
+              <Grid size={15} color={vista === 'grid' ? 'white' : '#64748B'} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: vista === 'grid' ? 'white' : '#64748B' }}>Grid</span>
+            </button>
+            <button className={`btn-icon ${vista === 'mapa' ? 'btn-primary' : 'btn-ghost'}`} style={{ borderRadius: '8px', padding: '6px 12px', height: '34px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setVista('mapa')} title="Vista Mapa">
+              <Map size={15} color={vista === 'mapa' ? 'white' : '#64748B'} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: vista === 'mapa' ? 'white' : '#64748B' }}>Mapa</span>
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.8)', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '3px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }}>
+            <button className="btn btn-ghost btn-icon" onClick={prevMonth} style={{ padding: '4px 6px', height: '34px', borderRadius: '8px' }}><ChevronLeft size={16} color="#64748B" /></button>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A', minWidth: 140, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {MONTHS_ES[month]} {year}
+            </span>
+            <button className="btn btn-ghost btn-icon" onClick={nextMonth} style={{ padding: '4px 6px', height: '34px', borderRadius: '8px' }}><ChevronRight size={16} color="#64748B" /></button>
+          </div>
         </div>
       </div>
 
-      {/* ── Grid de Calendarios ── */}
+      {/* ── Grid o Mapa ── */}
       {isLoading ? (
         <div className="loading-page" style={{ flex: 1 }}><div className="spinner" /></div>
+      ) : vista === 'mapa' ? (
+        <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid #E2E8F0', minHeight: 400, zIndex: 1 }}>
+          <MapContainer center={[38.9067, 1.4206]} zoom={11} style={{ height: '100%', width: '100%', zIndex: 1 }}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {propiedadesProcesadas.map(p => {
+              if (!p.latitud || !p.longitud) return null;
+              const isSelected = selectedVillas.has(p.id);
+              return (
+                <Marker key={p.id} position={[p.latitud, p.longitud]}>
+                  <Popup>
+                    <div style={{ padding: 4 }}>
+                      <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>{p.nombre}</h4>
+                      <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: '#64748B' }}>{p.habitaciones} hab. | {p.banos} baños</p>
+                      {!p.disponibleParaFechas && <p style={{ margin: '0 0 8px 0', color: '#DC2626', fontSize: '0.75rem', fontWeight: 600 }}>NO DISPONIBLE EN FECHAS</p>}
+                      <button 
+                        className={`btn btn-sm ${isSelected ? 'btn-gold' : 'btn-primary'}`} 
+                        style={{ width: '100%', padding: '4px 8px' }}
+                        onClick={() => toggleVilla(p.id)}
+                      >
+                        {isSelected ? 'Quitar' : 'Seleccionar'}
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </div>
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            {propsFiltradas.map(p => {
+            {propiedadesProcesadas.map(p => {
               const isSelected = selectedVillas.has(p.id);
+              const cardBg = p.disponibleParaFechas ? 'white' : '#FEF2F2';
+              const cardBorder = isSelected ? '2px solid #C9A84C' : p.disponibleParaFechas ? '1px solid #E2E8F0' : '1px solid #FECACA';
               return (
                 <div
                   key={p.id}
                   style={{
-                    background: 'white',
+                    background: cardBg,
                     borderRadius: 12,
-                    border: isSelected ? '2px solid #C9A84C' : '1px solid #E2E8F0',
+                    border: cardBorder,
                     overflow: 'hidden',
                     boxShadow: isSelected ? '0 4px 20px rgba(201,168,76,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
                     transition: 'all 0.2s',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    opacity: p.disponibleParaFechas ? 1 : 0.65
                   }}
                 >
                   {/* Card Header */}
@@ -543,7 +648,7 @@ export default function CalendarioVacacional() {
 
                   {/* Calendario */}
                   <div style={{ padding: '0.75rem 1rem 1rem' }}>
-                    <MiniCalendario propiedad={p} year={year} month={month} syncInfo={syncStatusMap[p.id]} />
+                    <MiniCalendario propiedad={p} year={year} month={month} reservas={villasReservas[p.id] || []} />
                   </div>
                 </div>
               );

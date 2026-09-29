@@ -2,8 +2,27 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { FileText, Upload, Image as ImageIcon, Loader2, Building2, User, ChevronDown, ChevronUp, X, Save } from 'lucide-react';
 import { propiedadesApi, propietariosApi, documentosApi } from '../services/api';
 import toast from 'react-hot-toast';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const markerIcon = L.divIcon({
+  html: `<div style="background-color: #1A3A5C; width: 18px; height: 18px; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.4);"></div>`,
+  className: 'custom-map-pin',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
+
+function MapClickSelector({ onSelect }) {
+  useMapEvents({
+    click(e) {
+      onSelect(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+}
 const PISCINA_OPT = ['SI', 'NO', 'COMUNITARIA'];
 
 function campo(d, k) {
@@ -25,6 +44,7 @@ export default function ModalCrearPropiedadUnificado({ onClose, onSuccess }) {
     precioAlquilerTemporadaBaja: '', rentaMensual: '',
     propietarioId: '', propietarioNombre: '', propietarioTelefono: '', propietarioEmail: '',
     garaje: false, terraza: false, jardin: false, vistasMar: false, ascensor: false,
+    latitud: '', longitud: '',
   });
 
   const [propietarios, setPropietarios] = useState([]);
@@ -224,6 +244,8 @@ export default function ModalCrearPropiedadUnificado({ onClose, onSuccess }) {
         descripcion: datos.descripcion || undefined,
         notas: datos.notas || undefined,
         propietarioId: datos.propietarioId || undefined,
+        latitud: datos.latitud ? parseFloat(datos.latitud) : undefined,
+        longitud: datos.longitud ? parseFloat(datos.longitud) : undefined,
       };
 
       if (body.tipo === 'VENTA' && datos.precioVenta)
@@ -419,6 +441,31 @@ export default function ModalCrearPropiedadUnificado({ onClose, onSuccess }) {
                 <div>
                   <label className="form-label">Zona <FieldBadge ok={campo(datos, 'zona')} /></label>
                   <input className="form-input" value={datos.zona || ''} onChange={e => upd('zona', e.target.value)} placeholder="Sant Josep, Talamanca..." />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label className="form-label">Latitud</label>
+                    <input className="form-input" type="number" step="any" value={datos.latitud || ''} onChange={e => upd('latitud', e.target.value)} placeholder="Ej. 38.9067" />
+                  </div>
+                  <div>
+                    <label className="form-label">Longitud</label>
+                    <input className="form-input" type="number" step="any" value={datos.longitud || ''} onChange={e => upd('longitud', e.target.value)} placeholder="Ej. 1.4206" />
+                  </div>
+                </div>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: 4 }}>Geolocalización en mapa (Haz clic para marcar)</label>
+                  <div style={{ height: '200px', width: '100%', borderRadius: 10, overflow: 'hidden', border: '1px solid #CBD5E1', zIndex: 10 }}>
+                    <MapContainer center={[38.9067, 1.4206]} zoom={10} style={{ height: '100%', width: '100%' }}>
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <MapClickSelector onSelect={(lat, lng) => {
+                        upd('latitud', lat.toFixed(6));
+                        upd('longitud', lng.toFixed(6));
+                      }} />
+                      {datos.latitud && datos.longitud && !isNaN(parseFloat(datos.latitud)) && !isNaN(parseFloat(datos.longitud)) && (
+                        <Marker position={[parseFloat(datos.latitud), parseFloat(datos.longitud)]} icon={markerIcon} />
+                      )}
+                    </MapContainer>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ flex: 1 }}>

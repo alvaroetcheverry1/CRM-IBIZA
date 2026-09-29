@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { clientesApi } from '../services/api';
+import { clientesApi, catalogosApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Palmtree, Home, Building2, Users, UserCheck,
-  FileText, Settings, LogOut, Bot, MessageCircle, CalendarDays, Presentation, Globe, Radar, CalendarClock, Scale, KanbanSquare, Database
+  FileText, Settings, LogOut, Bot, MessageCircle, CalendarDays, Presentation, Globe, Radar, CalendarClock, Scale, KanbanSquare, Database, ShieldCheck, Link
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { section: 'Personas' },
   { to: '/propietarios', icon: UserCheck, label: 'Propietarios' },
   { to: '/clientes', icon: Users, label: 'Clientes & Leads' },
+  { to: '/agenda', icon: CalendarDays, label: 'Agenda & Tareas' },
   { section: 'Agentes IA' },
   { to: '/agente-comercial', icon: Bot, label: 'AI Outbound (Llamadas)' },
   { to: '/whatsapp', icon: MessageCircle, label: 'AI Inbound (WhatsApp)' },
@@ -28,9 +29,12 @@ const NAV_ITEMS = [
   { section: 'Gestión' },
   { to: '/documentos', icon: FileText, label: 'Documentos & IA' },
   { to: '/migracion', icon: Database, label: 'Migration Wizard' },
-  { to: '/facturacion', icon: FileText, label: 'Facturación' },
+  { to: '/facturacion', icon: FileText, label: 'Facturación', roles: ['DIRECTOR', 'SUPERADMIN', 'BACKOFFICE'] },
   { to: '/propuestas', icon: Presentation, label: 'Generador Propuestas' },
-  { to: '/configuracion', icon: Settings, label: 'Configuración de Agencia' },
+  { to: '/catalogos', icon: Link, label: 'Catálogos Inteligentes' },
+  { to: '/configuracion', icon: Settings, label: 'Configuración de Agencia', roles: ['DIRECTOR', 'SUPERADMIN'] },
+  { section: '⚙ Panel de Control', roles: ['DIRECTOR', 'SUPERADMIN'] },
+  { to: '/admin', icon: ShieldCheck, label: 'Panel de Administración', roles: ['DIRECTOR', 'SUPERADMIN'] },
 ];
 
 function initials(name, lastname) {
@@ -50,7 +54,14 @@ export default function Sidebar() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const newLeadsCount = newLeadsData?.meta?.total || 0;
+  const { data: catalogosData } = useQuery({
+    queryKey: ['catalogos', 'SIDEBAR_VISTAS'],
+    queryFn: () => catalogosApi.list(),
+    refetchInterval: 2 * 60 * 1000,
+    staleTime: 60 * 1000,
+  });
+
+  const catalogsWithViews = (catalogosData || []).filter(c => c.vistas > 0).length;
 
   return (
     <aside className="sidebar">
@@ -59,14 +70,22 @@ export default function Sidebar() {
           <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px', maxWidth: '100%', objectFit: 'contain' }} />
         ) : (
           <>
-            <h1>{config?.nombreComercial || 'Ibiza Luxury'}<br/>Dreams</h1>
-            <span>Real Estate · Ibiza</span>
+            <h1 style={{ fontSize: '1.2rem' }}>{config?.nombreComercial || 'Ibiza Luxury Dreams'}</h1>
+            <span>CRM Real Estate</span>
           </>
         )}
       </div>
 
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item, i) => {
+        {NAV_ITEMS.filter(item => {
+          if (item.roles) {
+            return item.roles.includes(user?.rol);
+          }
+          if (item.role) {
+            return item.role === user?.rol;
+          }
+          return true;
+        }).map((item, i) => {
           if (item.section) {
             return <div key={i} className="nav-section-label">{item.section}</div>;
           }
@@ -80,9 +99,14 @@ export default function Sidebar() {
             >
               <Icon className="nav-icon" size={18} />
               {item.label}
-              {item.to === '/clientes' && newLeadsCount > 0 && (
+              {item.to === '/clientes' && (newLeadsData?.meta?.total || 0) > 0 && (
                 <span style={{ marginLeft: 'auto', background: '#EF4444', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: 10 }}>
-                  {newLeadsCount}
+                  {newLeadsData.meta.total}
+                </span>
+              )}
+              {item.to === '/catalogos' && catalogsWithViews > 0 && (
+                <span style={{ marginLeft: 'auto', background: '#7C3AED', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: 10 }} title="Catálogos con visitas">
+                  {catalogsWithViews} 👁
                 </span>
               )}
             </NavLink>
