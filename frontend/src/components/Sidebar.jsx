@@ -70,8 +70,8 @@ export default function Sidebar() {
           <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px', maxWidth: '100%', objectFit: 'contain' }} />
         ) : (
           <>
-            <h1 style={{ fontSize: '1.2rem' }}>{config?.nombreComercial || 'Ibiza Luxury Dreams'}</h1>
-            <span>CRM Real Estate</span>
+            <h1 style={{ fontSize: '1.2rem' }}>{config?.nombreComercial || 'SYNNER'}</h1>
+            <span>Real Estate OS</span>
           </>
         )}
       </div>

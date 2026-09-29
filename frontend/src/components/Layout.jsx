@@ -21,7 +21,7 @@ const titles = {
 
 export default function Layout() {
   const location = useLocation();
-  const pageInfo = titles[location.pathname] || { title: 'CRM Inmobiliario', subtitle: '' };
+  const pageInfo = titles[location.pathname] || { title: 'SYNNER', subtitle: '' };
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
