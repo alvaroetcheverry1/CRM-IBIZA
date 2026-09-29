@@ -99,20 +99,22 @@ export default function Registro() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
-            width: 64, height: 64,
+            width: 80, height: 80,
             background: 'linear-gradient(135deg, #0D1B2A, #1A3A5C)',
-            borderRadius: 16,
+            borderRadius: 22,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 1rem',
+            margin: '0 auto 1.5rem',
             boxShadow: '0 8px 24px rgba(13,27,42,0.25)',
+            overflow: 'hidden'
           }}>
-            <Building2 size={28} color="#C9A84C" />
+            <img src="/logo.png" alt="SYNNER Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+            <Building2 size={36} color="#C9A84C" style={{ display: 'none' }} />
           </div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0D1B2A', marginBottom: 4 }}>
-            Registra tu Agencia
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.2rem', color: '#0D1B2A', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
+            SYNNER
           </h1>
-          <p style={{ fontSize: '0.8rem', color: '#8A9BB0' }}>
-            Crea tu cuenta de acceso al CRM inmobiliario profesional
+          <p style={{ fontSize: '0.85rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600, margin: 0 }}>
+            Registra tu Agencia
           </p>
         </div>
 
