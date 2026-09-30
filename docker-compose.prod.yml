@@ -1,14 +1,16 @@
-# Neural CRM - Docker Compose Producción
-# Configuración supervisada para despliegue en producción
-# No expone puertos directamente (usa reverse proxy como Nginx/Traefik)
+# SYNNER CRM - Docker Compose Producción
+# Configuración para despliegue autoalojado con reverse proxy (Nginx).
+# NOTA: la BD recomendada es Supabase (gestionada). El servicio 'postgres' de abajo
+# solo es necesario si prefieres alojar PostgreSQL tú mismo; en ese caso apunta
+# DATABASE_URL/DIRECT_URL a este contenedor. Si usas Supabase, puedes omitirlo.
 
 version: '3.9'
 
 services:
-  # PostgreSQL - Base de datos con copias de seguridad automáticas
+  # PostgreSQL - Solo si NO usas Supabase (BD autoalojada)
   postgres:
     image: postgres:16-alpine
-    container_name: neural_crm_postgres
+    container_name: synner_crm_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -25,7 +27,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - neural_crm_network
+      - synner_crm_network
 
   # Backend Node.js
   backend:
@@ -34,7 +36,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - NODE_ENV=production
-    container_name: neural_crm_backend
+    container_name: synner_crm_backend
     restart: unless-stopped
     environment:
       - DATABASE_URL=${DATABASE_URL}
@@ -44,6 +46,10 @@ services:
       - NODE_ENV=production
       - PUBLIC_SERVER_URL=${PUBLIC_SERVER_URL}
       - FRONTEND_URL=${FRONTEND_URL}
+      - CORS_EXTRA_ORIGINS=${CORS_EXTRA_ORIGINS}
+      - BRAND_NAME=${BRAND_NAME}
+      - BRAND_TAGLINE=${BRAND_TAGLINE}
+      - ADMIN_NOTIFICATION_EMAIL=${ADMIN_NOTIFICATION_EMAIL}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_SERVICE_ACCOUNT_KEY_PATH=${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}
@@ -54,17 +60,20 @@ services:
       - WHATSAPP_TOKEN=${WHATSAPP_TOKEN}
       - WHATSAPP_PHONE_ID=${WHATSAPP_PHONE_ID}
       - WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - FROM_EMAIL=${FROM_EMAIL}
+      - WHATSAPP_APP_SECRET=${WHATSAPP_APP_SECRET}
+      - WHATSAPP_DEFAULT_AGENCIA_ID=${WHATSAPP_DEFAULT_AGENCIA_ID}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - PORTALES_FEED_TOKEN=${PORTALES_FEED_TOKEN}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+    expose:
+      - "3000"
     networks:
-      - neural_crm_network
+      - synner_crm_network
     logging:
       driver: "json-file"
       options:
@@ -76,13 +85,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
-    container_name: neural_crm_frontend
+    container_name: synner_crm_frontend
     restart: unless-stopped
     environment:
       - VITE_API_URL=${PUBLIC_SERVER_URL}
       - NODE_ENV=production
     networks:
-      - neural_crm_network
+      - synner_crm_network
     logging:
       driver: "json-file"
       options:
@@ -92,7 +101,7 @@ services:
   # Nginx - Reverse proxy con SSL/TLS
   nginx:
     image: nginx:alpine
-    container_name: neural_crm_nginx
+    container_name: synner_crm_nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -105,7 +114,7 @@ services:
       - backend
       - frontend
     networks:
-      - neural_crm_network
+      - synner_crm_network
     logging:
       driver: "json-file"
       options:
@@ -117,5 +126,5 @@ volumes:
   nginx_logs:
 
 networks:
-  neural_crm_network:
+  synner_crm_network:
     driver: bridge

@@ -1,16 +1,65 @@
+# Render.com — Backend SYNNER CRM
+# La base de datos es Supabase (externa), no se aprovisiona aquí.
 services:
   - type: web
-    name: crm-ibiza-backend
+    name: synner-crm-backend
     env: node
     plan: free
+    healthCheckPath: /health
     buildCommand: npm install && npx prisma generate
     startCommand: npm start
     envVars:
+      # ─── Base de datos (Supabase) ───
       - key: DATABASE_URL
         sync: false
-      - key: JWT_SECRET
-        generateValue: true
+      - key: DIRECT_URL
+        sync: false
+      # ─── Entorno ───
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
+      - key: FRONTEND_URL
+        sync: false
+      - key: PUBLIC_SERVER_URL
+        sync: false
+      - key: CORS_EXTRA_ORIGINS
+        sync: false
+      # ─── Marca ───
+      - key: BRAND_NAME
+        value: SYNNER
+      - key: BRAND_TAGLINE
+        value: The intelligent CRM
+      # ─── Seguridad ───
+      - key: JWT_SECRET
+        generateValue: true
+      # ─── Integraciones (rellenar en el dashboard de Render) ───
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_KEY_PATH
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
+      - key: GOOGLE_SHEET_MASTER_ID
+        sync: false
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: PORTALES_FEED_TOKEN
+        sync: false
+      - key: ADMIN_NOTIFICATION_EMAIL
+        sync: false
+      # ─── SMTP (emails) ───
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false

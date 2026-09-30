@@ -1,46 +1,46 @@
-# Dockerfile para Producción - Backend Node.js
-# Optimizado para producción (multi-stage build)
+# Dockerfile para Producción - Backend Node.js (SYNNER CRM)
+# Multi-stage build optimizado.
 
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar solo package.json y package-lock.json para caché de dependencias
+# Copiar manifiestos para aprovechar la caché de dependencias
 COPY package*.json ./
 
-# Instalar todas las dependencias (incluyendo devDependencies para build)
+# Instalar TODAS las dependencias (incluye prisma CLI para generar el cliente)
 RUN npm ci
 
-# Copiar código fuente
-COPY . .
-
-# Generar Prisma Client
+# Copiar el esquema de Prisma y generar el cliente
+COPY prisma ./prisma
 RUN npx prisma generate
 
-# Construir si hay paso de build (para React frontend embebido)
-# RUN npm run build
+# Copiar el resto del código fuente
+COPY . .
 
-# Production stage
+# ─── Production stage ──────────────────────────────────────
 FROM node:20-alpine AS production
 
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Copiar package.json y package-lock.json
+# Copiar manifiestos e instalar solo dependencias de producción
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Instalar solo dependencias de producción
-RUN npm ci --only=production
+# Copiar el Prisma Client YA generado desde el builder (evita regenerarlo)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-# Copiar Prisma Client generado
-COPY prisma ./prisma
-
-# Copiar código fuente desde builder
+# Copiar el esquema y el código de la aplicación
+COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.env.example ./.env
 
-# Exponer puerto
 EXPOSE 3000
 
-# Comando de inicio
+# Comprobación de salud del contenedor contra el endpoint /health
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
 CMD ["node", "src/server.js"]
