@@ -668,6 +668,8 @@ export default function Facturacion() {
             <Search className="search-icon" size={16} />
             <input 
               className="search-input" 
+              type="search"
+              aria-label="Buscar factura por número o cliente"
               placeholder="Buscar por número o cliente..." 
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}

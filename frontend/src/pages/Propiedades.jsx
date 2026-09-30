@@ -330,6 +330,8 @@ export default function Propiedades() {
           <Search size={15} className="search-icon" />
           <input
             className="search-input"
+            type="search"
+            aria-label="Buscar propiedad por nombre o zona"
             placeholder="Buscar por nombre, zona..."
             value={search}
             onChange={e => setSearch(e.target.value)}

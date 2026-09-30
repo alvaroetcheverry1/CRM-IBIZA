@@ -223,6 +223,8 @@ export default function CatalogoPublico() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '0.5rem 1rem', minWidth: 280 }}>
           <Search size={16} color="#94A3B8" />
           <input
+            type="search"
+            aria-label="Buscar villa o zona"
             style={{ border: 'none', background: 'none', outline: 'none', fontSize: '0.9rem', width: '100%', color: '#0F172A' }}
             placeholder="Buscar villa o zona..."
             value={busqueda}

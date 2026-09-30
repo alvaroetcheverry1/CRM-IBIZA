@@ -128,6 +128,9 @@ router.get('/portal/:token', async (req, res) => {
     const propietario = await prisma.propietario.findUnique({
       where: { token },
       include: {
+        agencia: {
+          include: { configuracion: true },
+        },
         propiedades: {
           where: { activo: true },
           include: {
@@ -159,7 +162,18 @@ router.get('/portal/:token', async (req, res) => {
       return res.status(404).json({ error: 'Portal de propietario no encontrado o token inválido' });
     }
 
-    res.json(propietario);
+    // Exponer solo la marca blanca de la agencia (no datos internos sensibles).
+    const cfg = propietario.agencia?.configuracion?.[0] || {};
+    const marca = {
+      nombreComercial: cfg.nombreComercial || propietario.agencia?.nombre || null,
+      logoUrl: cfg.logoUrl || null,
+      colorPrincipal: cfg.colorPrincipal || null,
+      telefonoOficial: cfg.telefonoOficial || null,
+      emailOficial: cfg.emailOficial || null,
+      whatsapp: cfg.whatsapp || null,
+    };
+    const { agencia, ...propietarioSinAgencia } = propietario;
+    res.json({ ...propietarioSinAgencia, marca });
   } catch (err) {
     res.status(500).json({ error: 'Error al cargar el portal del propietario', detail: err.message });
   }

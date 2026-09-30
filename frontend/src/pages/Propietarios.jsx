@@ -374,7 +374,7 @@ export default function Propietarios() {
       <div className="filters-bar">
         <div className="search-input-wrap">
           <Search size={15} className="search-icon" />
-          <input className="search-input" placeholder="Buscar propietario..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="search-input" type="search" aria-label="Buscar propietario" placeholder="Buscar propietario..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {['', 'PREMIUM', 'ESTANDAR', 'NUEVO'].map(c => (
           <button key={c} className={`filter-chip${categoria === c ? ' active' : ''}`} onClick={() => setCategoria(c)}>

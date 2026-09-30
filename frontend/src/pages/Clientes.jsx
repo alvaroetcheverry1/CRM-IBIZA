@@ -454,7 +454,7 @@ export default function Clientes() {
       <div className="filters-bar" style={{ marginBottom: '1.5rem' }}>
         <div className="search-input-wrap">
           <Search size={15} className="search-icon" />
-          <input className="search-input" placeholder="Buscar cliente..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="search-input" type="search" aria-label="Buscar cliente" placeholder="Buscar cliente..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {['', ...ESTADOS].map(e => (
           <button key={e} className={`filter-chip${estado === e ? ' active' : ''}`} onClick={() => setEstado(e)}>

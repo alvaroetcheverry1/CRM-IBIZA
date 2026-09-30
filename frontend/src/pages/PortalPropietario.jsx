@@ -58,14 +58,22 @@ export default function PortalPropietario() {
   // Calcular KPIs Generales
   const totalInmuebles = propiedades.length;
 
+  // Marca blanca de la agencia (con fallbacks neutros).
+  const marca = owner.marca || {};
+  const nombreAgencia = marca.nombreComercial || 'Tu Agencia';
+  const colorAgencia = marca.colorPrincipal || '#1A3A5C';
+
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'sans-serif' }}>
       
       {/* Header Premium */}
-      <header style={{ background: 'linear-gradient(135deg,#1A3A5C,#2D5F8F)', color: 'white', padding: '2.5rem 2rem', boxShadow: '0 4px 20px rgba(15,23,42,0.15)' }}>
+      <header style={{ background: `linear-gradient(135deg,${colorAgencia},#2D5F8F)`, color: 'white', padding: '2.5rem 2rem', boxShadow: '0 4px 20px rgba(15,23,42,0.15)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Portal del Propietario</span>
+            {marca.logoUrl && (
+              <img src={marca.logoUrl} alt={nombreAgencia} style={{ height: 36, objectFit: 'contain', marginBottom: 10, display: 'block' }} onError={(e) => { e.target.style.display = 'none'; }} />
+            )}
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{nombreAgencia} · Portal del Propietario</span>
             <h1 style={{ margin: '4px 0 0 0', fontSize: '1.8rem', fontWeight: 300 }}>Bienvenido, {owner.nombre} {owner.apellidos}</h1>
             <p style={{ margin: '8px 0 0 0', fontSize: '0.875rem', opacity: 0.8 }}>Consulta en tiempo real la rentabilidad, reservas e historial de tus propiedades exclusivas.</p>
           </div>
@@ -303,8 +311,13 @@ export default function PortalPropietario() {
       </main>
 
       {/* Footer minimalista */}
-      <footer style={{ marginTop: '4rem', padding: '2rem', background: '#1A3A5C', color: 'white', textAlign: 'center', fontSize: '0.8rem', opacity: 0.9 }}>
-        <p style={{ margin: 0 }}>© {new Date().getFullYear()} Portal de Acceso Seguro para Propietarios.</p>
+      <footer style={{ marginTop: '4rem', padding: '2rem', background: colorAgencia, color: 'white', textAlign: 'center', fontSize: '0.8rem', opacity: 0.9 }}>
+        <p style={{ margin: 0 }}>© {new Date().getFullYear()} {nombreAgencia} · Portal de Acceso Seguro para Propietarios.</p>
+        {(marca.emailOficial || marca.telefonoOficial) && (
+          <p style={{ margin: '4px 0 0 0', opacity: 0.75 }}>
+            {[marca.emailOficial, marca.telefonoOficial].filter(Boolean).join(' · ')}
+          </p>
+        )}
         <p style={{ margin: '4px 0 0 0', opacity: 0.6 }}>Esta información es estrictamente confidencial. Si tienes dudas, ponte en contacto con tu agente comercial asignado.</p>
       </footer>
     </div>
