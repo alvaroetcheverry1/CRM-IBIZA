@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Neural CRM - El CRM Inmobiliario Inteligente que automatiza tu agencia de alto standing. IA que procesa dossiers en 3 minutos, matchmaking automático y control total de tu portfolio." />
-  <title>Neural CRM | CRM Inmobiliario Inteligente</title>
+  <meta name="description" content="SYNNER - The intelligent CRM. El CRM inmobiliario inteligente que automatiza tu agencia de alto standing. IA que procesa dossiers en 3 minutos, matchmaking automático y control total de tu portfolio." />
+  <title>SYNNER | The intelligent CRM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
   <style>
@@ -524,21 +524,30 @@
 <!-- ─── NAV ──────────────────────────────────────── -->
 <nav id="navbar">
   <div>
-    <div class="nav-brand">Neural <span>CRM</span></div>
+    <div class="nav-brand">SYNNER</div>
     <div class="nav-sub">CRM Inmobiliario Inteligente</div>
   </div>
   <div class="nav-links">
-    <a href="#por-que-neural">Por qué Neural CRM</a>
+    <a href="#por-que-neural">Por qué SYNNER</a>
     <a href="#funcionalidades">Funcionalidades</a>
     <a href="#agentes-ia">Agentes IA</a>
     <a href="#dashboard">Dashboard</a>
     <a href="#precios">Precios</a>
     <a href="#testimonios">Testimonios</a>
+    <a href="#" id="link-acceder">Acceder</a>
   </div>
   <button class="nav-cta" onclick="document.getElementById('cta-final').scrollIntoView({behavior:'smooth'})">
     Solicitar Demo
   </button>
 </nav>
+<script>
+  // URL de la app (login/registro). Ajustar APP_URL al desplegar.
+  window.APP_URL = window.APP_URL || 'http://localhost:5173';
+  document.addEventListener('DOMContentLoaded', function () {
+    var acceder = document.getElementById('link-acceder');
+    if (acceder) acceder.setAttribute('href', window.APP_URL + '/login');
+  });
+</script>
 
 <!-- ─── HERO ──────────────────────────────────────── -->
 <section class="hero">
@@ -599,7 +608,7 @@
 <!-- ─── WHY NEURAL ────────────────────────────────── -->
 <section id="por-que-neural" class="section" style="background: rgba(255,255,255,0.02);">
   <div class="container">
-    <div class="section-tag">¿Por qué Neural CRM?</div>
+    <div class="section-tag">¿Por qué SYNNER?</div>
     <h2 class="section-title">8 diferenciadores que te llevarán al siguiente nivel</h2>
     <p class="section-desc">
       No es solo un CRM: es un sistema completo de automatización con IA que te ayuda a cerrar más ventas, ahorrar tiempo y escalar tu agencia sin esfuerzo.
@@ -1006,7 +1015,7 @@
     <div class="section-tag">¿Listo para transformar tu agencia?</div>
     <h2 class="section-title" style="text-align: center; margin-bottom: 2rem;">Empieza tu prueba gratuita de 14 días</h2>
     <p class="section-desc" style="text-align: center; max-width: 600px; margin: 0 auto 3rem;">
-      Sin tarjeta de crédito. Sin compromiso. Descubre por qué las agencias de lujo eligen Neural CRM.
+      Sin tarjeta de crédito. Sin compromiso. Descubre por qué las agencias de lujo eligen SYNNER.
     </p>
 
     <div class="cta-form">
@@ -1068,7 +1077,7 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-col">
-        <div class="footer-brand">Neural <span>CRM</span></div>
+        <div class="footer-brand">SYNNER</div>
         <p style="font-size: 0.82rem; color: rgba(255,255,255,0.6); margin-top: 1rem; line-height: 1.6;">
           CRM Inmobiliario Inteligente que automatiza tu agencia de alto standing.<br/>
           IA que procesa dossiers en 3 minutos, matchmaking automático y control total de tu portfolio.
@@ -1077,7 +1086,7 @@
       <div class="footer-col">
         <h4>Plataforma</h4>
         <ul>
-          <li><a href="#por-que-neural">Por qué Neural CRM</a></li>
+          <li><a href="#por-que-neural">Por qué SYNNER</a></li>
           <li><a href="#agentes-ia">Agentes IA</a></li>
           <li><a href="#funcionalidades">Funcionalidades</a></li>
           <li><a href="#dashboard">Dashboard</a></li>
@@ -1103,7 +1112,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <div>© 2026 Neural CRM SL · NIF: B-00000000 · All rights reserved</div>
+      <div>© 2026 SYNNER · All rights reserved</div>
       <div style="color: var(--gold);">Licencia API: NEU-2026-IB-0001</div>
     </div>
   </div>

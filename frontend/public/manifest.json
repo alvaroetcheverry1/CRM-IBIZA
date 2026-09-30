@@ -1,11 +1,11 @@
 {
-  "short_name": "CRM Ibiza",
-  "name": "Ibiza Luxury Dreams CRM",
+  "short_name": "SYNNER",
+  "name": "SYNNER · The intelligent CRM",
   "description": "Plataforma inteligente de gestión inmobiliaria para Venta y Alquiler",
   "icons": [
     {
-      "src": "/vite.svg",
-      "type": "image/svg+xml",
+      "src": "/logo-synner.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     }

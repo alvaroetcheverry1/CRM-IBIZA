@@ -54,7 +54,7 @@ export default function LoginPage() {
         gap: '2rem',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <img src="/SYNNER_logo_transparent.svg" alt="SYNNER" style={{ width: 300, height: 300, objectFit: 'contain', display: 'block', margin: '0 auto 0.25rem', filter: 'drop-shadow(0 0 14px rgba(214, 153, 96, 0.12))' }} onError={(e) => { e.target.style.display = 'none'; }} />
+          <img src="/logo-synner.png" alt="SYNNER" style={{ width: 300, height: 300, objectFit: 'contain', display: 'block', margin: '0 auto 0.25rem', filter: 'drop-shadow(0 0 14px rgba(214, 153, 96, 0.12))' }} onError={(e) => { e.target.style.display = 'none'; }} />
           <h1 style={{
             margin: 0,
             fontSize: 'clamp(3.25rem, 6vw, 7rem)',

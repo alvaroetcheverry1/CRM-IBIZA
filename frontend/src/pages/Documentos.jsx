@@ -306,7 +306,7 @@ export default function Documentos() {
   const [notaLoading, setNotaLoading] = useState(false);
   const [pendingDocName, setPendingDocName] = useState(null); // triggers property creation modal
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['documentos'],
     queryFn: () => documentosApi.list({ limit: 50 }),
     refetchInterval: 5000,
@@ -388,19 +388,7 @@ export default function Documentos() {
 
   const fetchedDocs = data?.data || [];
 
-  // Si no hay documentos en BBDD, inyectamos uno falso para la demo visual de la firma:
-  const documentos = fetchedDocs.length > 0 ? fetchedDocs : [
-    {
-      id: 'mock-doc-1',
-      nombre: 'Contrato_Arras_Villa_Talamanca_Signed.pdf',
-      tipo: 'application/pdf',
-      propiedad: { nombre: 'Villa Talamanca' },
-      estadoProcesamiento: 'COMPLETADO',
-      creadoEn: new Date().toISOString(),
-      urlDrive: 'https://drive.google.com/file/d/demo/view',
-      esNota: false,
-    }
-  ];
+  const documentos = fetchedDocs;
 
   const procesados = documentos.filter(d => d.estadoProcesamiento === 'COMPLETADO').length;
   const notas = documentos.filter(d => d.esNota).length;
@@ -532,6 +520,8 @@ export default function Documentos() {
             <tbody>
               {isLoading ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem' }}><div className="spinner" style={{ margin: 'auto' }} /></td></tr>
+              ) : isError ? (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#C0392B' }}>No se pudieron cargar los documentos. Revisa tu conexión e inténtalo de nuevo.</td></tr>
               ) : documentos.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#8A9BB0' }}>Sin documentos. Sube el primero.</td></tr>
               ) : documentos.map(d => {

@@ -314,7 +314,7 @@ export default function Clientes() {
 
   const isPipeline = view === 'pipeline';
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['clientes', estado, debouncedSearch, isPipeline ? 'all' : page],
     queryFn: () => clientesApi.list({ 
       estado: estado || undefined, 
@@ -465,6 +465,8 @@ export default function Clientes() {
 
       {isLoading ? (
         <div className="loading-page" style={{ minHeight: 300 }}><div className="spinner" /></div>
+      ) : isError ? (
+        <div className="loading-page" style={{ minHeight: 300, textAlign: 'center', color: '#C0392B' }}>No se pudieron cargar los clientes. Comprueba tu conexión con el servidor.</div>
       ) : view === 'pipeline' ? (
         <div className="pipeline-board">
           {ESTADOS.map(e => (

@@ -165,12 +165,7 @@ export const usuariosApi = {
 // ─── Dashboard ────────────────────────────────────────────
 export const dashboardApi = {
   getStats: async (meses = 12) => {
-    try {
-      return await apiCall(`/dashboard?meses=${meses}`);
-    } catch {
-      await delay();
-      return MOCK_DATA.dashboard;
-    }
+    return await apiCall(`/dashboard?meses=${meses}`);
   },
 };
 
@@ -188,15 +183,7 @@ export const propiedadesApi = {
     }
   },
   get: async (id) => {
-    try {
-      return await apiCall(`/propiedades/${id}`);
-    } catch (err) {
-      console.warn('Propiedad get error, usando mock:', err.message);
-      await delay();
-      const found = MOCK_DATA.propiedades.find(p => p.id === id);
-      if (!found) throw new Error(`Propiedad ${id} no encontrada en mock`);
-      return found;
-    }
+    return await apiCall(`/propiedades/${id}`);
   },
   create: async (data) => {
     return await apiCall('/propiedades', { method: 'POST', body: JSON.stringify(data) });
@@ -221,20 +208,12 @@ export const propietariosApi = {
       ).toString();
       return await apiCall(`/propietarios${qs ? '?' + qs : ''}`);
     } catch (err) {
-      console.warn('Propietarios API error, usando mock:', err.message);
-      await delay();
-      let data = [...MOCK_DATA.propietarios];
-      if (params.categoria) data = data.filter(p => p.categoria === params.categoria);
-      return { data, meta: { total: data.length } };
+      console.error('Propietarios API error:', err.message);
+      throw err;
     }
   },
   get: async (id) => {
-    try {
-      return await apiCall(`/propietarios/${id}`);
-    } catch {
-      await delay();
-      return MOCK_DATA.propietarios.find(p => p.id === id);
-    }
+    return await apiCall(`/propietarios/${id}`);
   },
   create: async (data) => {
     return await apiCall('/propietarios', { method: 'POST', body: JSON.stringify(data) });
@@ -255,21 +234,12 @@ export const clientesApi = {
       ).toString();
       return await apiCall(`/clientes${qs ? '?' + qs : ''}`);
     } catch (err) {
-      console.warn('Clientes API error, usando mock:', err.message);
-      await delay();
-      let data = [...MOCK_DATA.clientes];
-      if (params.estado) data = data.filter(c => c.estado === params.estado);
-      if (params.tipo) data = data.filter(c => c.tipo === params.tipo);
-      return { data, meta: { total: data.length } };
+      console.error('Clientes API error:', err.message);
+      throw err;
     }
   },
   get: async (id) => {
-    try {
-      return await apiCall(`/clientes/${id}`);
-    } catch {
-      await delay();
-      return MOCK_DATA.clientes.find(c => c.id === id);
-    }
+    return await apiCall(`/clientes/${id}`);
   },
   create: async (data) => {
     return await apiCall('/clientes', { method: 'POST', body: JSON.stringify(data) });
@@ -293,9 +263,9 @@ export const documentosApi = {
         Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
       ).toString();
       return await apiCall(`/documentos${qs ? '?' + qs : ''}`);
-    } catch {
-      await delay();
-      return { data: MOCK_DATA.documentos };
+    } catch (err) {
+      console.error('Documentos API error:', err.message);
+      throw err;
     }
   },
   upload: async (formData) => {
@@ -336,13 +306,20 @@ export const reservasApi = {
 
 // ─── Pagos ────────────────────────────────────────────────
 export const pagosApi = {
-  list: async () => {
-    await delay(300);
-    return { data: MOCK_DATA.pagos };
+  list: async (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
+    ).toString();
+    return await apiCall(`/pagos${qs ? '?' + qs : ''}`);
   },
-  update: async (_id, data) => { await delay(); return data; },
+  update: async (id, data) => {
+    return await apiCall(`/pagos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  },
 };
 
+// NOTA: el backend aún no expone CRUD de facturas (solo /facturas/upload).
+// Estas operaciones funcionan en memoria (mock) hasta que se implementen los
+// endpoints reales. Ver roadmap Fase 5 (rutas menores) / Fase 6 (facturación).
 export const facturasApi = {
   list: async () => {
     await delay(500);

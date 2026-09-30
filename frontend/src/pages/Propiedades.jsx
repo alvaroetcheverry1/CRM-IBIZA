@@ -216,7 +216,7 @@ export default function Propiedades() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['propiedades', tipo, estado, page, debouncedSearch, habs, banos, piscina, minPrecio, maxPrecio],
     queryFn: () => propiedadesApi.list({ 
       tipo: tipo || undefined, 
@@ -455,8 +455,16 @@ export default function Propiedades() {
         <div className="loading-page" style={{ minHeight: 300 }}>
           <div className="spinner" />
         </div>
+      ) : isError ? (
+        <div className="loading-page" style={{ minHeight: 300, textAlign: 'center', color: '#C0392B' }}>
+          No se pudieron cargar las propiedades. Comprueba tu conexión con el servidor.
+        </div>
       ) : viewMode === 'map' ? (
         <MapView propiedades={propiedades} navigate={navigate} />
+      ) : propiedades.length === 0 ? (
+        <div className="loading-page" style={{ minHeight: 300, textAlign: 'center', color: '#8A9BB0' }}>
+          No hay propiedades que coincidan. Crea la primera o ajusta los filtros.
+        </div>
       ) : (
         <>
           <div className="properties-grid">

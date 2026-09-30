@@ -339,7 +339,7 @@ export default function Propietarios() {
   const [selected, setSelected] = useState(null);
   const [showNew, setShowNew]   = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['propietarios', categoria],
     queryFn: () => propietariosApi.list({ categoria: categoria || undefined, limit: 50 }),
   });
@@ -385,6 +385,8 @@ export default function Propietarios() {
 
       {isLoading ? (
         <div className="loading-page" style={{ minHeight: 300 }}><div className="spinner" /></div>
+      ) : isError ? (
+        <div className="loading-page" style={{ minHeight: 300, textAlign: 'center', color: '#C0392B' }}>No se pudieron cargar los propietarios. Comprueba tu conexión con el servidor.</div>
       ) : (
         <div className="card">
           <div className="table-wrap">

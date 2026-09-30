@@ -25,7 +25,7 @@ function RelativoFecha({ date }) {
 export default function Dashboard() {
   const [mesesFiltro, setMesesFiltro] = useState(12);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', mesesFiltro],
     queryFn: () => dashboardApi.getStats(mesesFiltro),
   });
@@ -35,6 +35,16 @@ export default function Dashboard() {
       <div className="loading-page">
         <div className="spinner" />
         <span>Cargando dashboard...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="loading-page" style={{ textAlign: 'center' }}>
+        <span style={{ color: '#C0392B', fontWeight: 600 }}>No se pudo cargar el dashboard.</span>
+        <span style={{ color: '#8A9BB0', fontSize: '0.85rem' }}>Comprueba tu conexión con el servidor.</span>
+        <button className="btn btn-outline" style={{ marginTop: '0.75rem' }} onClick={() => refetch()}>Reintentar</button>
       </div>
     );
   }
