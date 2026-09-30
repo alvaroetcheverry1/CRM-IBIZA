@@ -7,6 +7,10 @@ dist/
 backend/public/uploads/
 backend/dev.db
 backend/dev.db-journal
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+*.sqlite
+*.sqlite3
 frontend/public/uploads/
 .DS_Store
 *.log

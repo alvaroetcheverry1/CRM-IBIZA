@@ -257,14 +257,17 @@ class DriveService {
   }
 
   async _guardarSupabase(file) {
-    logger.info(`DriveService fallback: guardando documento en Supabase ${file.originalname}`);
+    if (!file || !file.buffer) {
+      throw new Error('No se recibió el contenido del archivo a guardar');
+    }
     const safeName = Date.now() + '_' + file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
+    logger.info(`DriveService: guardando documento ${file.originalname} (Supabase o fallback local)`);
     try {
       const { uploadFile } = require('./supabaseStorageService');
-      const url = await uploadFile(file.buffer || Buffer.from('Mock'), safeName, file.mimetype || 'application/octet-stream');
-      return { url, fileId: `supabase_${safeName}` };
+      const url = await uploadFile(file.buffer, safeName, file.mimetype || 'application/octet-stream');
+      return { url, fileId: `storage_${safeName}` };
     } catch (e) {
-      logger.error('Error fallback Supabase:', e);
+      logger.error('Error guardando archivo:', e);
       throw e;
     }
   }
