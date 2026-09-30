@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facturasApi, clientesApi, propiedadesApi } from '../services/api';
+import { useAgency } from '../context/AgencyContext';
 import { 
   Receipt, Plus, Search, Filter, Download, CloudUpload,
   CheckCircle, Clock, FileText, X, Save, Trash2, Loader2 
@@ -325,6 +326,7 @@ function FacturaModal({ factura, onClose, onSave, clientes, propiedades }) {
 // ─── Página Principal ──────────────────────────────────────
 export default function Facturacion() {
   const queryClient = useQueryClient();
+  const { config } = useAgency();
   const [modalOpen, setModalOpen] = useState(false);
   const [facturaEdit, setFacturaEdit] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -388,12 +390,14 @@ export default function Facturacion() {
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(22);
-      doc.text('IBIZA LUXURY DREAMS', 15, 20);
-      
+      const nombreAgencia = config?.nombreComercial || config?.nombreLegal || 'Real Estate';
+      doc.text(nombreAgencia.toUpperCase(), 15, 20);
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      doc.text('CRM Real Estate & Luxury Services', 15, 28);
-      doc.text('Ibiza, España | info@ibizaluxurydreams.com', 15, 34);
+      const lineaContacto = [config?.direccion, config?.emailOficial].filter(Boolean).join(' | ');
+      doc.text('Real Estate & Luxury Services', 15, 28);
+      if (lineaContacto) doc.text(lineaContacto, 15, 34);
 
       doc.setTextColor(...goldColor);
       doc.setFont('helvetica', 'bold');

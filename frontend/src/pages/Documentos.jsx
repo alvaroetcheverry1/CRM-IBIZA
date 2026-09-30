@@ -630,7 +630,7 @@ function FirmaModal({ documento, onClose, onSuccess }) {
   const [sending, setSending] = useState(false);
   const [datos, setDatos] = useState({
     nombreProp: 'Propietario / Arrendador',
-    emailProp: 'propietario@ibizaluxurydreams.com',
+    emailProp: '',
     nombreCli: 'Cliente Principal',
     emailCli: 'cliente@ejemplo.com'
   });

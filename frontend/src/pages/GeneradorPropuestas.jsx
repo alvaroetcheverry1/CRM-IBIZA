@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { propiedadesApi } from '../services/api';
+import { useAgency } from '../context/AgencyContext';
 import {
   FileText, Plus, X, Printer, Check, User, Building2,
   Bed, Bath, Square, MapPin, Search, ChevronDown
@@ -48,6 +49,9 @@ const PLANTILLAS = [
 // ─── Vista de impresión de la propuesta ──────────────────────────────────────
 function PropuestaPreview({ cliente, propiedades, plantilla, notas }) {
   const t = PLANTILLAS.find(p => p.id === plantilla) || PLANTILLAS[0];
+  const { config } = useAgency();
+  const nombreAgencia = config?.nombreComercial || 'Tu Agencia';
+  const contactoAgencia = [config?.emailOficial, config?.telefonoOficial].filter(Boolean).join(' · ');
 
   return (
     <div id="propuesta-preview" style={{ background: 'white', fontFamily: t.fontStyle === 'serif' ? 'Georgia, serif' : "'Inter', sans-serif", color: '#1A1A2E' }}>
@@ -59,7 +63,7 @@ function PropuestaPreview({ cliente, propiedades, plantilla, notas }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
           <div>
             <div style={{ color: t.accentColor, fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
-              Ibiza Luxury Dreams · Real Estate
+              Real Estate
             </div>
             <h1 style={{ color: 'white', margin: 0, fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 400, lineHeight: 1.2 }}>
               Propuesta Comercial<br />Selección de Propiedades
@@ -130,12 +134,12 @@ function PropuestaPreview({ cliente, propiedades, plantilla, notas }) {
         {/* Footer */}
         <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.9rem' }}>Ibiza Luxury Dreams</div>
-            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>info@ibizaluxurydreams.com · +34 600 000 000</div>
+            <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.9rem' }}>{nombreAgencia}</div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{contactoAgencia || 'Documento generado automáticamente'}</div>
           </div>
           <div style={{ fontSize: '0.7rem', color: '#94A3B8', textAlign: 'right' }}>
             Documento confidencial · Válido 30 días<br />
-            © {new Date().getFullYear()} Ibiza Luxury Dreams
+            © {new Date().getFullYear()} {nombreAgencia}
           </div>
         </div>
       </div>

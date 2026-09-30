@@ -36,7 +36,7 @@ export default function AgenteLegal() {
     setContratoTexto('');
     setSignStatus({ cliente: false, propietario: false });
     
-    const propName = propietario || 'IBIZA LUXURY DREAMS S.L. (VENDEDOR/ARRENDADOR)';
+    const propName = propietario || 'EL VENDEDOR/ARRENDADOR';
     const amount = precio || 'la cantidad estipulada entre ambas partes';
 
     const baseText = [

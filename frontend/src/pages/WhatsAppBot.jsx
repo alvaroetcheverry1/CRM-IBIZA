@@ -185,7 +185,7 @@ export default function WhatsAppBot() {
                 <MessageCircle size={40} color="#94A3B8" />
               </div>
               <div>
-                <h3 style={{ margin: '0 0 0.5rem 0', color: '#41525D', fontSize: '1.25rem' }}>WhatsApp CRM Ibiza</h3>
+                <h3 style={{ margin: '0 0 0.5rem 0', color: '#41525D', fontSize: '1.25rem' }}>WhatsApp CRM</h3>
                 <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, maxWidth: 400 }}>Selecciona un cliente de la lista de la izquierda para ver su historial y enviarle mensajes directamente desde aquí.</p>
               </div>
             </div>

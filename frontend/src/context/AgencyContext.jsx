@@ -35,7 +35,7 @@ export const AgencyProvider = ({ children }) => {
     config,
     loading,
     refreshConfig: fetchConfig,
-    primaryColor: config?.colorPrincipal || '#1890ff',
+    primaryColor: config?.colorPrincipal || '#1A3A5C',
     logoUrl: config?.logoUrl || '/logo.png' // Fallback to default
   };
 

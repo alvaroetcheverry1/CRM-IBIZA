@@ -421,7 +421,7 @@ model ConfiguracionAgencia {
   watermarkUrl    String?
   firmaUrl        String?
   iban            String?
-  colorPrincipal  String? @default("#1890ff")
+  colorPrincipal  String? @default("#1A3A5C")
   webUrl          String?
   instagram       String?
   facebook        String?

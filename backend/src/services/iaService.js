@@ -2,6 +2,9 @@ const OpenAI = require('openai').default;
 const { logger } = require('../utils/logger');
 const { prisma } = require('../utils/prisma');
 
+// Marca de la plataforma (configurable). No se usa como marca comercial de agencia.
+const BRAND_NAME = process.env.BRAND_NAME || 'SYNNER';
+
 const SISTEMA_PROMPT = `Eres un experto en análisis de documentación inmobiliaria de lujo en Ibiza y las Islas Baleares.
 Tu tarea es leer el texto extraído de un PDF o presentación de una propiedad y devolver un JSON con los campos detectados.
 
@@ -903,7 +906,7 @@ No inventes datos numéricos si no hay indicios firmes.`;
   async generarEmailBienvenidaPersonalizado(cliente) {
     if (!this.enabled) {
       logger.info('IA (mock): generando email de bienvenida personalizado');
-      return `Queremos darte la más cálida bienvenida a Ibiza Inteligente. Agradecemos enormemente tu interés en nuestros servicios de corretaje de propiedades exclusivas en la isla.`;
+      return `Queremos darte la más cálida bienvenida. Agradecemos enormemente tu interés en nuestros servicios de corretaje de propiedades exclusivas.`;
     }
 
     logger.info(`IA: Generando texto de email personalizado para lead ${cliente.id}`);
@@ -913,7 +916,7 @@ No inventes datos numéricos si no hay indicios firmes.`;
         messages: [
           {
             role: 'system',
-            content: 'Eres un copywriter de lujo experto en inmobiliarias premium en Ibiza (Ibiza Luxury Dreams). Tu tarea es redactar un mensaje de bienvenida personalizado para un cliente potencial, basándote en su perfil.'
+            content: 'Eres un copywriter de lujo experto en inmobiliarias premium en Ibiza y Baleares. Tu tarea es redactar un mensaje de bienvenida personalizado para un cliente potencial, basándote en su perfil. No menciones el nombre de ninguna agencia concreta.'
           },
           {
             role: 'user',
@@ -935,7 +938,7 @@ Destaca que un asesor experto se pondrá en contacto pronto para presentarle una
       return response.choices[0].message.content.trim();
     } catch (err) {
       logger.error('[IA] Error en generarEmailBienvenidaPersonalizado:', err.message);
-      return `Queremos darte la más cálida bienvenida a Ibiza Inteligente. Agradecemos enormemente tu interés en nuestros servicios de corretaje de propiedades exclusivas en la isla.`;
+      return `Queremos darte la más cálida bienvenida. Agradecemos enormemente tu interés en nuestros servicios de corretaje de propiedades exclusivas.`;
     }
   }
 }

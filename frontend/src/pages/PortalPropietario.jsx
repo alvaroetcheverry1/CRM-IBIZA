@@ -304,7 +304,7 @@ export default function PortalPropietario() {
 
       {/* Footer minimalista */}
       <footer style={{ marginTop: '4rem', padding: '2rem', background: '#1A3A5C', color: 'white', textAlign: 'center', fontSize: '0.8rem', opacity: 0.9 }}>
-        <p style={{ margin: 0 }}>© {new Date().getFullYear()} Ibiza Inteligente. Portal de Acceso Seguro para Propietarios.</p>
+        <p style={{ margin: 0 }}>© {new Date().getFullYear()} Portal de Acceso Seguro para Propietarios.</p>
         <p style={{ margin: '4px 0 0 0', opacity: 0.6 }}>Esta información es estrictamente confidencial. Si tienes dudas, ponte en contacto con tu agente comercial asignado.</p>
       </footer>
     </div>

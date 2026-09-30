@@ -252,7 +252,7 @@ export default function PublicCatalogo() {
       {/* Footer */}
       <footer style={{ backgroundColor: '#0F172A', color: '#94A3B8', padding: '40px 20px', textAlign: 'center', fontSize: '0.85rem', borderTop: '1px solid #1E293B' }}>
         <p style={{ margin: 0 }}>© {new Date().getFullYear()} {nombreAgencia}. Todos los derechos reservados.</p>
-        <p style={{ margin: '8px 0 0 0', opacity: 0.6 }}>Esta es una selección privada y confidencial generada a través de Ibiza Luxury Dreams CRM.</p>
+        <p style={{ margin: '8px 0 0 0', opacity: 0.6 }}>Esta es una selección privada y confidencial.</p>
       </footer>
     </div>
   );

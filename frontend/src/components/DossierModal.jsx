@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileCheck, FileText, Loader2, ChevronLeft, ChevronRight, Check, ImagePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAgency } from '../context/AgencyContext';
 import html2pdf from 'html2pdf.js';
 import { documentosApi } from '../services/api';
 
@@ -12,6 +13,8 @@ function formatMoney(n) {
 const IDIOMAS = ['Español', 'English', 'Deutsch', 'Français'];
 
 export default function DossierModal({ propiedad, onClose, onAddPhotos }) {
+  const { config } = useAgency();
+  const nombreAgencia = config?.nombreComercial || 'Real Estate';
   const fotos = propiedad.documentos?.filter(d => d.tipo === 'FOTO') || [];
 
   // ── Step 1: selección de fotos ──
@@ -31,7 +34,7 @@ export default function DossierModal({ propiedad, onClose, onAddPhotos }) {
   const [precio,      setPrecio]      = useState(precioDefault);
   const [agente,      setAgente]      = useState('');
   const [telefono,    setTelefono]    = useState('');
-  const [email,       setEmail]       = useState('info@ibizaluxurydreams.com');
+  const [email,       setEmail]       = useState('');
   const [idioma,      setIdioma]      = useState('Español');
 
   // ── Wizard state ──
@@ -237,7 +240,7 @@ export default function DossierModal({ propiedad, onClose, onAddPhotos }) {
                   </div>
                 )}
                 <div style={{ position: 'absolute', top: '1.5rem', left: '2rem', zIndex: 1, borderBottom: '2px solid #C9A84C', paddingBottom: 4 }}>
-                  <span style={{ fontSize: '1rem', fontWeight: 300, color: 'white', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Ibiza Luxury Dreams</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 300, color: 'white', letterSpacing: '0.18em', textTransform: 'uppercase' }}>{nombreAgencia}</span>
                 </div>
                 <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
                   <div style={{ color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.72rem', fontWeight: 600, marginBottom: 8 }}>Ref. {propiedad.referencia}</div>

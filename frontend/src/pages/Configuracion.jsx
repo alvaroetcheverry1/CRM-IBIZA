@@ -267,7 +267,7 @@ export default function Configuracion() {
 
                 <div className="form-group">
                   <label className="form-label required">Nombre Comercial</label>
-                  <input required type="text" className="form-input" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange} placeholder="Ej. Ibiza Luxury Dreams" />
+                  <input required type="text" className="form-input" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange} placeholder="Ej. Mediterranean Luxury Estates" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Color Corporativo Principal</label>

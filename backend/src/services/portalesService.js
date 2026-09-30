@@ -20,6 +20,36 @@
 
 const { prisma } = require('../utils/prisma');
 
+// Marca de la plataforma (para el atributo generator de los feeds).
+const BRAND_NAME = process.env.BRAND_NAME || 'SYNNER';
+const FEED_GENERATOR = `${BRAND_NAME} CRM`;
+
+/**
+ * Obtiene los datos de contacto de la agencia desde ConfiguracionAgencia.
+ * Estos datos se publican en los feeds de los portales (marca blanca), por lo que
+ * deben ser los de la agencia, no un valor hardcodeado. Devuelve campos vacíos si
+ * no hay configuración, para no exponer datos de contacto ajenos.
+ * @param {string} [agenciaId]
+ * @returns {Promise<{name: string, phone: string, email: string, website: string}>}
+ */
+async function obtenerContactoAgencia(agenciaId) {
+  const fallback = { name: '', phone: '', email: '', website: '' };
+  try {
+    const where = {};
+    if (agenciaId) where.agenciaId = agenciaId;
+    const config = await prisma.configuracionAgencia.findFirst({ where });
+    if (!config) return fallback;
+    return {
+      name: config.nombreComercial || config.nombreLegal || '',
+      phone: config.telefonoOficial || config.whatsapp || '',
+      email: config.emailOficial || '',
+      website: config.webUrl || '',
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 // ─── Configuración de portales ─────────────────────────────────────────────
 const PORTALES_CONFIG = {
   idealista: {
@@ -110,7 +140,7 @@ function mapearTipoPropiedad(tipo, portal) {
  * Genera el XML estándar para Idealista Feed v1.
  * https://www.idealista.com/pro/herramientas/publicacion-propiedades/
  */
-function adaptarParaIdealistaXML(propiedades, serverBaseUrl) {
+function adaptarParaIdealistaXML(propiedades, serverBaseUrl, contacto = {}) {
   const items = propiedades.map(p => {
     const fotos = obtenerFotosUrls(p, serverBaseUrl);
     const precio = obtenerPrecioPrincipal(p);
@@ -150,16 +180,16 @@ function adaptarParaIdealistaXML(propiedades, serverBaseUrl) {
       </features>
       ${fotos.length > 0 ? `<pictures>${fotos.map(url => `<picture><url><![CDATA[${url}]]></url></picture>`).join('\n')}</pictures>` : ''}
       <contact>
-        <name>Ibiza Luxury Dreams</name>
-        <phone>+34 971 000 000</phone>
-        <email>info@ibizaluxurydreams.com</email>
+        <name><![CDATA[${contacto.name || ''}]]></name>
+        <phone>${contacto.phone || ''}</phone>
+        <email>${contacto.email || ''}</email>
       </contact>
       <reference><![CDATA[${p.referencia}]]></reference>
     </property>`;
   }).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<listings version="1.0" generator="IbizaLuxuryDreamsCRM">
+<listings version="1.0" generator="${FEED_GENERATOR}">
   <date>${new Date().toISOString()}</date>
   ${items}
 </listings>`;
@@ -168,7 +198,7 @@ function adaptarParaIdealistaXML(propiedades, serverBaseUrl) {
 /**
  * Genera el XML para Fotocasa Feed.
  */
-function adaptarParaFotocasaXML(propiedades, serverBaseUrl) {
+function adaptarParaFotocasaXML(propiedades, serverBaseUrl, contacto = {}) {
   const items = propiedades.map(p => {
     const fotos = obtenerFotosUrls(p, serverBaseUrl);
     const precio = obtenerPrecioPrincipal(p);
@@ -203,7 +233,7 @@ function adaptarParaFotocasaXML(propiedades, serverBaseUrl) {
   }).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<ads generator="IbizaLuxuryDreamsCRM" date="${new Date().toISOString()}">
+<ads generator="${FEED_GENERATOR}" date="${new Date().toISOString()}">
   ${items}
 </ads>`;
 }
@@ -212,7 +242,7 @@ function adaptarParaFotocasaXML(propiedades, serverBaseUrl) {
  * Genera el XML estándar Kyero (usado por Kyero, Thinkspain, etc.)
  * https://www.kyero.com/xml
  */
-function adaptarParaKyeroXML(propiedades, serverBaseUrl) {
+function adaptarParaKyeroXML(propiedades, serverBaseUrl, contacto = {}) {
   const items = propiedades.map(p => {
     const fotos = obtenerFotosUrls(p, serverBaseUrl);
     const precio = obtenerPrecioPrincipal(p);
@@ -250,7 +280,7 @@ function adaptarParaKyeroXML(propiedades, serverBaseUrl) {
   }).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<export date="${new Date().toISOString()}" generator="IbizaLuxuryDreamsCRM">
+<export date="${new Date().toISOString()}" generator="${FEED_GENERATOR}">
   <properties>
   ${items}
   </properties>
@@ -261,7 +291,7 @@ function adaptarParaKyeroXML(propiedades, serverBaseUrl) {
  * Genera el payload JSON para James Edition API.
  * James Edition requiere acuerdo directo como agencia premium.
  */
-function adaptarParaJamesEditionJSON(propiedad, serverBaseUrl) {
+function adaptarParaJamesEditionJSON(propiedad, serverBaseUrl, contacto = {}) {
   const fotos = obtenerFotosUrls(propiedad, serverBaseUrl);
   const precio = obtenerPrecioPrincipal(propiedad);
 
@@ -294,10 +324,10 @@ function adaptarParaJamesEditionJSON(propiedad, serverBaseUrl) {
     },
     images: fotos.map((url, i) => ({ url, order: i + 1 })),
     contact: {
-      agency: 'Ibiza Luxury Dreams',
-      phone: '+34 971 000 000',
-      email: 'info@ibizaluxurydreams.com',
-      website: 'https://ibizaluxurydreams.com',
+      agency: contacto.name || '',
+      phone: contacto.phone || '',
+      email: contacto.email || '',
+      website: contacto.website || '',
     },
     updated_at: new Date(propiedad.actualizadoEn).toISOString(),
   };
@@ -343,6 +373,14 @@ async function publicarEnPortales(propiedadId, portales, serverBaseUrl, agenciaI
     try { tokens = JSON.parse(configAgencia.tokensPortales); } catch(e){}
   }
 
+  // Contacto de la agencia que se publicará en los portales (marca blanca).
+  const contacto = {
+    name: configAgencia?.nombreComercial || configAgencia?.nombreLegal || '',
+    phone: configAgencia?.telefonoOficial || configAgencia?.whatsapp || '',
+    email: configAgencia?.emailOficial || '',
+    website: configAgencia?.webUrl || '',
+  };
+
   const resultados = [];
 
   for (const portal of portales) {
@@ -380,7 +418,7 @@ async function publicarEnPortales(propiedadId, portales, serverBaseUrl, agenciaI
       let resultado;
 
       if (config.tipo === 'api_rest' && portal === 'james_edition') {
-        resultado = await publicarJamesEdition(propiedad, config, serverBaseUrl);
+        resultado = await publicarJamesEdition(propiedad, config, serverBaseUrl, contacto);
       } else {
         // Para feeds XML: simplemente marcamos como publicado (el portal consume el feed automáticamente)
         resultado = await actualizarFeedXML(propiedad, portal, config);
@@ -420,8 +458,8 @@ async function publicarEnPortales(propiedadId, portales, serverBaseUrl, agenciaI
  * Simula / ejecuta publicación en James Edition vía REST API.
  * En producción: hacer POST/PUT a la API de JamesEdition con el token de agencia.
  */
-async function publicarJamesEdition(propiedad, config, serverBaseUrl) {
-  const payload = adaptarParaJamesEditionJSON(propiedad, serverBaseUrl);
+async function publicarJamesEdition(propiedad, config, serverBaseUrl, contacto = {}) {
+  const payload = adaptarParaJamesEditionJSON(propiedad, serverBaseUrl, contacto);
 
   if (config.apiKey) {
     // Producción: llamada real a la API
@@ -579,16 +617,19 @@ async function generarFeedXML(portal, serverBaseUrl, agenciaId) {
     .map(p => p.propiedad)
     .filter(p => p && p.activo);
 
+  // Contacto de la agencia para publicar en el feed (marca blanca).
+  const contacto = await obtenerContactoAgencia(agenciaId);
+
   switch (portal) {
     case 'idealista':
-      return adaptarParaIdealistaXML(propiedades, serverBaseUrl);
+      return adaptarParaIdealistaXML(propiedades, serverBaseUrl, contacto);
     case 'fotocasa':
-      return adaptarParaFotocasaXML(propiedades, serverBaseUrl);
+      return adaptarParaFotocasaXML(propiedades, serverBaseUrl, contacto);
     case 'kyero':
-      return adaptarParaKyeroXML(propiedades, serverBaseUrl);
+      return adaptarParaKyeroXML(propiedades, serverBaseUrl, contacto);
     default:
       if (portal.startsWith('custom_')) {
-        return adaptarParaKyeroXML(propiedades, serverBaseUrl);
+        return adaptarParaKyeroXML(propiedades, serverBaseUrl, contacto);
       }
       throw new Error(`Portal ${portal} no soporta feed XML`);
   }

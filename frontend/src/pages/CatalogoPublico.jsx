@@ -200,7 +200,7 @@ export default function CatalogoPublico() {
         
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto' }}>
           <div style={{ color: colors.gold, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-            Ibiza Luxury Dreams · Portfolio Exclusivo {new Date().getFullYear()}
+            Portfolio Exclusivo {new Date().getFullYear()}
           </div>
           <h1 style={{ color: 'white', margin: '0 0 1rem', fontSize: 'clamp(1.75rem, 5vw, 3rem)', fontFamily: 'Georgia, serif', fontWeight: 400, lineHeight: 1.2 }}>
             Villas de Lujo para Alquiler<br/>en Ibiza
@@ -253,22 +253,11 @@ export default function CatalogoPublico() {
 
       {/* Footer de contacto */}
       <div style={{ background: colors.navy, padding: '3rem 2rem', textAlign: 'center', color: 'white' }}>
-        <div style={{ borderBottom: '1px solid rgba(201,168,76,0.3)', paddingBottom: '0.75rem', marginBottom: '1.5rem', display: 'inline-block', color: colors.gold, fontSize: '0.75rem', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
-          Ibiza Luxury Dreams
-        </div>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', margin: '0 0 1.5rem' }}>
           Tu agencia de referencia para propiedades de lujo en Ibiza
         </p>
-        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-          <a href="tel:+34600000000" style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.gold, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
-            <Phone size={16} /> +34 600 000 000
-          </a>
-          <a href="mailto:info@ibizaluxurydreams.com" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.9rem' }}>
-            <Mail size={16} /> info@ibizaluxurydreams.com
-          </a>
-        </div>
         <div style={{ marginTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>
-          © {new Date().getFullYear()} Ibiza Luxury Dreams · Todos los derechos reservados · Precios orientativos sujetos a disponibilidad
+          © {new Date().getFullYear()} · Todos los derechos reservados · Precios orientativos sujetos a disponibilidad
         </div>
       </div>
     </div>

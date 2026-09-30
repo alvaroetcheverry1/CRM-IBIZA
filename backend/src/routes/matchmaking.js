@@ -245,9 +245,10 @@ router.post('/generar-pitch', authenticate, async (req, res) => {
     }
 
     const precio = propiedad.venta?.precioVenta || propiedad.alquilerVacacional?.precioTemporadaAlta || propiedad.alquilerLargaDuracion?.rentaMensual || '';
-    const enlaceCatalogo = catalogoToken ? `\n\nIncluye este enlace en tu mensaje para que pueda ver las fotos y detalles: https://crm.ibiza/c/${catalogoToken}` : '';
+    const baseCatalogo = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const enlaceCatalogo = catalogoToken ? `\n\nIncluye este enlace en tu mensaje para que pueda ver las fotos y detalles: ${baseCatalogo}/c/${catalogoToken}` : '';
 
-    const sysPrompt = `Eres Sofía, asistente comercial de Ibiza Luxury Dreams.
+    const sysPrompt = `Eres Sofía, asistente comercial inmobiliaria de lujo en Ibiza y Baleares.
 Redacta un mensaje de WhatsApp/Email muy elegante, persuasivo y exclusivo dirigido a ${cliente.nombre}.
 Presenta la propiedad "${propiedad.nombre}" ubicada en ${propiedad.zona} con ${propiedad.habitaciones} habitaciones.
 Precio listado: ${precio} EUR.

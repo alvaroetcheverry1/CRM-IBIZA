@@ -278,7 +278,7 @@ async function agendarVisita(cliente) {
 
 async function generarRespuestaDefault(cliente, text) {
   // Usar IA para generar respuesta personalizada
-  const prompt = `Responde como agente inmobiliario de Ibiza Luxury Dreams, de forma amable y profesional, a la consulta de un cliente interesado en propiedades en Ibiza.\n\nConsulta del cliente: "${text}"\n\nResponde en máximo 100 caracteres, de forma concisa y útil.`;
+  const prompt = `Responde como agente inmobiliario de lujo en Ibiza, de forma amable y profesional, a la consulta de un cliente interesado en propiedades en Ibiza.\n\nConsulta del cliente: "${text}"\n\nResponde en máximo 100 caracteres, de forma concisa y útil.`;
 
   const respuestaIA = await sendToOpenAI(prompt, 'RESPONSE_GEN');
 

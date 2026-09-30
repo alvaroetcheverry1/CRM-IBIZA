@@ -61,10 +61,11 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5174',   // Puerto alternativo Vite
   'http://localhost:8080',   // Agente de captación de leads
   'http://localhost:3001',   // Posible segundo frontend
-  'https://ibizaluxurydreams.com',
-  'https://www.ibizaluxurydreams.com',
-  'https://crm-ibiza.vercel.app', // Vercel explícito
-];
+  // Dominios de producción adicionales, separados por comas en CORS_EXTRA_ORIGINS
+  ...(process.env.CORS_EXTRA_ORIGINS
+    ? process.env.CORS_EXTRA_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : []),
+].filter(Boolean);
 app.use(cors({
   origin: (origin, cb) => {
     // Permitir peticiones sin origin (Postman, scripts locales)
@@ -161,7 +162,7 @@ app.use((err, req, res, next) => {
 
 // ─── Inicio ────────────────────────────────────────────────
 app.listen(PORT, () => {
-  logger.info(`🏝 Ibiza Luxury Dreams CRM · Backend escuchando en puerto ${PORT}`);
+  logger.info(`✨ SYNNER · The intelligent CRM · Backend escuchando en puerto ${PORT}`);
   logger.info(`📊 Modo: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🌐 CORS habilitado para: ${ALLOWED_ORIGINS.join(', ')}`);
 
