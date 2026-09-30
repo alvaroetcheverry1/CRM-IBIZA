@@ -4,6 +4,7 @@ import { AgencyProvider, useAgency } from './context/AgencyContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/Login';
 import Registro from './pages/Registro';
+import AccesoInterno from './pages/AccesoInterno';
 import AdminPanel from './pages/AdminPanel';
 import Dashboard from './pages/Dashboard';
 import Propiedades from './pages/Propiedades';
@@ -51,6 +52,8 @@ function AppRoutes() {
       <Route path="/catalogo/vacacional" element={<CatalogoPublico />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<Registro />} />
+      {/* Acceso interno del superadmin (ruta oculta, no enlazada en el login público) */}
+      <Route path="/panel-interno" element={<AccesoInterno />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="configuracion" element={<Configuracion />} />

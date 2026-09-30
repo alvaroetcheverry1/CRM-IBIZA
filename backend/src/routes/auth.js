@@ -21,7 +21,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ─── Generar tokens JWT ──────────────────────────────────────────────────────
 const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  // Access token de vida corta (1h); el frontend lo renueva con el refresh token
+  // de forma transparente, así que el usuario no percibe deslogueos.
+  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
   const refreshToken = jwt.sign({ userId }, process.env.JWT_SECRET + '_refresh', { expiresIn: '30d' });
   return { accessToken, refreshToken };
 };
@@ -37,8 +39,10 @@ const usuarioPublico = (u) => ({
 });
 
 // ─── POST /api/auth/google ───────────────────────────────────────────────────
-// Login con token de Google. Si el usuario no existe, se crea como AGENTE
-// dentro de una agencia existente (si el email dominio coincide) o sin agencia.
+// Login con token de Google. SOLO se permite el acceso a usuarios que YA existen
+// y pertenecen a una agencia. NO se crean usuarios sueltos sin agencia (evita
+// cuentas huérfanas fuera del modelo multi-tenant). Para entrar, el usuario debe
+// haber registrado su agencia o haber sido invitado por su director.
 router.post('/google', async (req, res) => {
   const { credential } = req.body;
   if (!credential) return res.status(400).json({ error: 'Credencial de Google requerida' });
@@ -48,26 +52,42 @@ router.post('/google', async (req, res) => {
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
-    const { sub: googleId, email, name, picture } = ticket.getPayload();
+    const { sub: googleId, email, picture } = ticket.getPayload();
 
+    // Buscar por googleId o, si es la primera vez con Google, por email existente.
     let usuario = await prisma.usuario.findUnique({ where: { googleId } });
     if (!usuario) {
-      usuario = await prisma.usuario.findUnique({ where: { email } });
-      if (usuario) {
-        usuario = await prisma.usuario.update({
-          where: { id: usuario.id },
-          data: { googleId, avatar: picture },
-        });
-      } else {
-        const [nombre, ...apellidosParts] = name.split(' ');
-        usuario = await prisma.usuario.create({
-          data: { googleId, email, nombre, apellidos: apellidosParts.join(' '), avatar: picture, rol: 'AGENTE' },
+      const porEmail = await prisma.usuario.findUnique({ where: { email } });
+      if (!porEmail) {
+        // Usuario no registrado: no creamos cuenta huérfana.
+        return res.status(403).json({
+          error: 'Este correo no está dado de alta. Registra tu agencia o pide a tu director que te invite.',
+          code: 'NO_ACCOUNT',
         });
       }
+      // Vincular el googleId a la cuenta existente.
+      usuario = await prisma.usuario.update({
+        where: { id: porEmail.id },
+        data: { googleId, avatar: picture },
+      });
     }
 
     if (!usuario.activo) {
       return res.status(403).json({ error: 'Usuario desactivado. Contacta con el administrador.' });
+    }
+
+    // Verificar estado de la agencia (igual que en el login por email).
+    if (usuario.agenciaId && usuario.rol !== 'SUPERADMIN') {
+      const agencia = await prisma.agencia.findUnique({
+        where: { id: usuario.agenciaId },
+        select: { estado: true },
+      });
+      if (agencia?.estado === 'PENDIENTE') {
+        return res.status(403).json({ error: 'Tu cuenta está pendiente de activación.', code: 'PENDING_ACTIVATION' });
+      }
+      if (agencia?.estado === 'SUSPENDIDA') {
+        return res.status(403).json({ error: 'Cuenta suspendida. Contacta con soporte.' });
+      }
     }
 
     await prisma.usuario.update({ where: { id: usuario.id }, data: { ultimoAcceso: new Date() } });
@@ -117,7 +137,7 @@ router.post('/register', async (req, res) => {
           email,
           passwordHash,
           telefono: telefono || null,
-          estado: 'ACTIVA', // Se activa por defecto para permitir acceso inmediato
+          estado: 'PENDIENTE', // Requiere activación manual del superadmin
           plan: 'TRIAL',
         },
       });
@@ -142,6 +162,14 @@ router.post('/register', async (req, res) => {
     });
 
     logger.info(`Nueva agencia registrada: ${nombreAgencia} (${email})`);
+
+    // Avisar al superadmin (best-effort, no bloquea el registro)
+    try {
+      const { emailService } = require('../services/emailService');
+      emailService.sendAdminNuevaAgencia(agencia);
+    } catch (e) {
+      logger.warn('No se pudo avisar al superadmin de la nueva agencia:', e.message);
+    }
 
     // No generamos token hasta que el superadmin active la cuenta
     res.status(201).json({

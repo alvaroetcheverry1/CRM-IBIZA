@@ -430,6 +430,12 @@ model ConfiguracionAgencia {
   tokensPortales    String?
   configFacturacion String?
 
+  // Credenciales de WhatsApp Business (Meta) propias de la agencia.
+  whatsappPhoneId     String?
+  whatsappToken       String?
+  whatsappVerifyToken String?
+  whatsappAppSecret   String?
+
   agenciaId String?
   agencia   Agencia? @relation(fields: [agenciaId], references: [id])
 

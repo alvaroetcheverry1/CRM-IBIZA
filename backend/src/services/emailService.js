@@ -229,7 +229,55 @@ const emailService = {
     } catch (err) {
       logger.error(`[EmailService] Error al enviar invitación a ${userEmail}:`, err.message);
     }
-  }
+  },
+
+  /**
+   * Avisa al superadmin de que una nueva agencia se ha registrado y está pendiente
+   * de aprobación. Best-effort: no lanza si falla (no debe bloquear el registro).
+   * El destinatario se toma de ADMIN_NOTIFICATION_EMAIL.
+   */
+  sendAdminNuevaAgencia: async (agencia) => {
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+    if (!adminEmail) {
+      logger.info('[EmailService] ADMIN_NOTIFICATION_EMAIL no configurado; no se avisa de la nueva agencia.');
+      return;
+    }
+    try {
+      const activeTransporter = await initTransporter();
+      const panelUrl = `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/admin`;
+      const mailOptions = {
+        from: DEFAULT_FROM,
+        to: adminEmail,
+        subject: `Nueva agencia pendiente de aprobación: ${agencia.nombre}`,
+        html: `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <div style="background: linear-gradient(135deg,#0D1B2A,#1A3A5C); padding: 20px; text-align: center; border-radius: 6px 6px 0 0; color: white;">
+              <h1 style="margin: 0; font-size: 22px;">${BRAND_NAME}</h1>
+            </div>
+            <div style="padding: 24px; color: #334155; line-height: 1.6;">
+              <h2 style="color: #1a3a5c; margin-top: 0;">Nueva solicitud de acceso</h2>
+              <p>La agencia <strong>${agencia.nombre}</strong> se ha registrado y está pendiente de aprobación.</p>
+              <ul style="font-size: 14px; color: #475569;">
+                <li>Email: <strong>${agencia.email}</strong></li>
+                ${agencia.telefono ? `<li>Teléfono: ${agencia.telefono}</li>` : ''}
+              </ul>
+              <p style="text-align: center; margin: 30px 0;">
+                <a href="${panelUrl}" style="background-color: #c9a84c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Revisar en el panel</a>
+              </p>
+            </div>
+          </div>
+        `,
+      };
+      const info = await activeTransporter.sendMail(mailOptions);
+      logger.info(`[EmailService] Aviso de nueva agencia enviado a ${adminEmail}. ID: ${info.messageId}`);
+      if (info.messageId && info.messageId.includes('ethereal')) {
+        logger.info(`[EmailService] Preview: ${nodemailer.getTestMessageUrl(info)}`);
+      }
+      return info;
+    } catch (err) {
+      logger.error('[EmailService] Error avisando de nueva agencia:', err.message);
+    }
+  },
 };
 
 module.exports = { emailService };

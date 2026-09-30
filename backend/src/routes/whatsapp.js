@@ -9,12 +9,19 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const { sendToOpenAI } = require('../services/iaService');
+const { iaService } = require('../services/iaService');
 const { prisma } = require('../utils/prisma');
 
-async function getPropiedadesPorZona(tipo) {
+// Agencia por defecto para los leads entrantes de WhatsApp (multi-tenant).
+// El webhook público de Meta no identifica la agencia, así que se asocia mediante
+// esta variable de entorno. Si no está configurada, el lead queda sin agencia.
+const DEFAULT_AGENCIA_ID = process.env.WHATSAPP_DEFAULT_AGENCIA_ID || null;
+
+async function getPropiedadesPorZona(tipo, agenciaId = DEFAULT_AGENCIA_ID) {
+  const where = { tipo, activo: true };
+  if (agenciaId) where.agenciaId = agenciaId;
   return await prisma.propiedad.findMany({
-    where: { tipo, activo: true },
+    where,
     take: 5,
     orderBy: { creadoEn: 'desc' }
   });
@@ -30,19 +37,61 @@ async function updateClienteEstado(clienteId, estado) {
 const router = express.Router();
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'crm_ibiza_whatsapp_2024';
 
-// Helper: Verificar firma HMAC (recomendado por Meta)
+// Guarda el cuerpo crudo del webhook para poder verificar la firma HMAC después,
+// una vez resuelta la agencia (cada agencia puede tener su propio app secret).
+// Se registra en express.json({ verify }).
 function verifySignature(req, res, buf) {
-  const signature = req.headers['x-hub-signature-256'];
-  if (!signature) {
+  req.rawBody = buf;
+}
+
+/**
+ * Resuelve la configuración de WhatsApp de una agencia a partir del phone_number_id
+ * que Meta incluye en el webhook. Cada agencia guarda sus credenciales en
+ * ConfiguracionAgencia. Si no se encuentra, cae a las variables de entorno globales
+ * (compatibilidad hacia atrás / entorno de desarrollo).
+ * @param {string} phoneNumberId
+ * @returns {Promise<{agenciaId: string|null, phoneId: string, token: string, appSecret: string, verifyToken: string}>}
+ */
+async function resolverConfigWhatsApp(phoneNumberId) {
+  const globalCfg = {
+    agenciaId: DEFAULT_AGENCIA_ID,
+    phoneId: process.env.WHATSAPP_PHONE_ID || '',
+    token: process.env.WHATSAPP_TOKEN || '',
+    appSecret: process.env.WHATSAPP_APP_SECRET || '',
+    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || VERIFY_TOKEN,
+  };
+  if (!phoneNumberId) return globalCfg;
+
+  try {
+    const cfg = await prisma.configuracionAgencia.findFirst({
+      where: { whatsappPhoneId: phoneNumberId },
+    });
+    if (cfg) {
+      return {
+        agenciaId: cfg.agenciaId || DEFAULT_AGENCIA_ID,
+        phoneId: cfg.whatsappPhoneId || globalCfg.phoneId,
+        token: cfg.whatsappToken || globalCfg.token,
+        appSecret: cfg.whatsappAppSecret || globalCfg.appSecret,
+        verifyToken: cfg.whatsappVerifyToken || globalCfg.verifyToken,
+      };
+    }
+  } catch (err) {
+    console.error('Error resolviendo config WhatsApp por agencia:', err.message);
+  }
+  return globalCfg;
+}
+
+// Verifica la firma HMAC del webhook con el app secret indicado.
+function firmaValida(rawBody, signature, appSecret) {
+  if (!appSecret || !signature || !rawBody) return false;
+  try {
+    const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
     return false;
   }
-  
-  const expectedSignature = 'sha256=' + crypto
-    .createHmac('sha256', process.env.WHATSAPP_APP_SECRET)
-    .update(buf)
-    .digest('hex');
-  
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
 
 // GET: Webhook verification
@@ -63,15 +112,30 @@ router.get('/webhook', (req, res) => {
 router.post('/webhook', express.json({ verify: verifySignature }), async (req, res) => {
   const body = req.body;
 
-  // Log para debugging
-  console.log('📩 WhatsApp webhook received:', JSON.stringify(body, null, 2));
+  // Extraer el phone_number_id para resolver la agencia y sus credenciales.
+  const value = body?.entry?.[0]?.changes?.[0]?.value;
+  const phoneNumberId = value?.metadata?.phone_number_id;
+  const cfg = await resolverConfigWhatsApp(phoneNumberId);
+
+  // Si la agencia (o el entorno) tiene app secret, exigimos firma válida.
+  const signature = req.headers['x-hub-signature-256'];
+  if (cfg.appSecret) {
+    if (!firmaValida(req.rawBody, signature, cfg.appSecret)) {
+      console.error('❌ WhatsApp webhook: firma HMAC inválida');
+      return res.status(401).send('Invalid signature');
+    }
+  }
 
   // Check if it's a message
-  if (body.object && body.entry && body.entry[0].changes) {
+  if (body.object && body.entry && body.entry[0]?.changes) {
     for (const change of body.entry[0].changes) {
-      if (change.value.messages) {
+      if (change.value?.messages) {
         for (const message of change.value.messages) {
-          await handleIncomingMessage(message);
+          try {
+            await handleIncomingMessage(message, cfg);
+          } catch (err) {
+            console.error('❌ Error procesando mensaje WhatsApp:', err.message);
+          }
         }
       }
     }
@@ -81,16 +145,17 @@ router.post('/webhook', express.json({ verify: verifySignature }), async (req, r
 });
 
 // Manejar mensaje entrante
-async function handleIncomingMessage(message) {
+async function handleIncomingMessage(message, cfg = {}) {
   const from = message.from; // Número del cliente
   const text = message.text?.body;
 
   if (!text) return;
 
+  const agenciaId = cfg.agenciaId || DEFAULT_AGENCIA_ID;
   console.log(`💬 Mensaje de ${from}: ${text}`);
 
-  // 1. Guardar o actualizar cliente
-  let cliente = await getOrCreateCliente(from, text);
+  // 1. Guardar o actualizar cliente (en la agencia dueña de este número)
+  let cliente = await getOrCreateCliente(from, text, agenciaId);
 
   // 2. Determinar intención del mensaje
   const intento = detectarIntencion(text);
@@ -100,13 +165,13 @@ async function handleIncomingMessage(message) {
 
   switch (intento) {
     case 'VACACIONAL':
-      respuesta = await generarRespuestaVacacional(cliente, text);
+      respuesta = await generarRespuestaVacacional(cliente, text, agenciaId);
       break;
     case 'LARGA_DURACION':
-      respuesta = await generarRespuestaLargaDuracion(cliente, text);
+      respuesta = await generarRespuestaLargaDuracion(cliente, text, agenciaId);
       break;
     case 'COMPRA':
-      respuesta = await generarRespuestaCompra(cliente, text);
+      respuesta = await generarRespuestaCompra(cliente, text, agenciaId);
       break;
     case 'PRECIO':
       respuesta = await generarRespuestaPrecio(cliente);
@@ -118,22 +183,22 @@ async function handleIncomingMessage(message) {
       respuesta = await generarRespuestaDefault(cliente, text);
   }
 
-  // 4. Enviar respuesta
-  await enviarMensajeWhatsApp(from, respuesta);
+  // 4. Enviar respuesta con las credenciales de la agencia
+  await enviarMensajeWhatsApp(from, respuesta, cfg);
 }
 
 // Obtener o crear cliente
-async function getOrCreateCliente(phone, mensaje) {
-  // Buscar por teléfono
-  const clientes = await prisma.cliente.findMany({
-    where: { telefono: phone }
-  });
+async function getOrCreateCliente(phone, mensaje, agenciaId = DEFAULT_AGENCIA_ID) {
+  // Buscar por teléfono (acotado a la agencia dueña del número si se conoce)
+  const whereCliente = { telefono: phone };
+  if (agenciaId) whereCliente.agenciaId = agenciaId;
+  const clientes = await prisma.cliente.findMany({ where: whereCliente });
 
   if (clientes.length > 0) {
     return clientes[0];
   }
 
-  // Crear nuevo cliente
+  // Crear nuevo cliente (asignado a la agencia dueña del número)
   return await prisma.cliente.create({
     data: {
       nombre: `Lead ${phone}`,
@@ -143,7 +208,8 @@ async function getOrCreateCliente(phone, mensaje) {
       estado: 'NUEVO',
       origen: 'WHATSAPP',
       notas: `Mensaje inicial: ${mensaje}`,
-      whatsappContactado: true
+      whatsappContactado: true,
+      ...(agenciaId ? { agenciaId } : {}),
     }
   });
 }
@@ -172,9 +238,9 @@ function detectarIntencion(text) {
 }
 
 // Generar respuesta según intención
-async function generarRespuestaVacacional(cliente, text) {
+async function generarRespuestaVacacional(cliente, text, agenciaId = DEFAULT_AGENCIA_ID) {
   // Buscar villas vacacionales
-  const villas = await getPropiedadesPorZona('VACACIONAL');
+  const villas = await getPropiedadesPorZona('VACACIONAL', agenciaId);
   
   if (villas.length === 0) {
     return "Por el momento no tenemos villas vacacionales disponibles. ¿Te interesa que te avise cuando aparezcan nuevas? 🏖️";
@@ -209,8 +275,8 @@ async function generarRespuestaVacacional(cliente, text) {
   return respuesta;
 }
 
-async function generarRespuestaLargaDuracion(cliente, text) {
-  const pisos = await getPropiedadesPorZona('LARGA_DURACION');
+async function generarRespuestaLargaDuracion(cliente, text, agenciaId = DEFAULT_AGENCIA_ID) {
+  const pisos = await getPropiedadesPorZona('LARGA_DURACION', agenciaId);
   
   if (pisos.length === 0) {
     return "Por el momento no tenemos pisos para alquiler de larga duración. ¿Te interesa que te avise cuando aparezcan nuevas? 🏡";
@@ -233,8 +299,8 @@ async function generarRespuestaLargaDuracion(cliente, text) {
   return respuesta;
 }
 
-async function generarRespuestaCompra(cliente, text) {
-  const ventas = await getPropiedadesPorZona('VENTA');
+async function generarRespuestaCompra(cliente, text, agenciaId = DEFAULT_AGENCIA_ID) {
+  const ventas = await getPropiedadesPorZona('VENTA', agenciaId);
   
   if (ventas.length === 0) {
     return "Por el momento no tenemos propiedades en venta. ¿Te interesa que te avise cuando aparezcan nuevas? 🏛️";
@@ -270,27 +336,23 @@ async function generarRespuestaPrecio(cliente) {
 
 async function agendarVisita(cliente) {
   await updateClienteEstado(cliente.id, 'VISITA_AGENDADA');
-  
-  return "📅 ¡Perfecto! He agendado tu visita. Un agente te contactará en breve para coordinar la fecha y hora. 😊";
 
-  return respuesta;
+  return "📅 ¡Perfecto! He agendado tu visita. Un agente te contactará en breve para coordinar la fecha y hora. 😊";
 }
 
 async function generarRespuestaDefault(cliente, text) {
-  // Usar IA para generar respuesta personalizada
+  // Usar IA para generar respuesta personalizada (con fallback si no hay IA)
   const prompt = `Responde como agente inmobiliario de lujo en Ibiza, de forma amable y profesional, a la consulta de un cliente interesado en propiedades en Ibiza.\n\nConsulta del cliente: "${text}"\n\nResponde en máximo 100 caracteres, de forma concisa y útil.`;
 
-  const respuestaIA = await sendToOpenAI(prompt, 'RESPONSE_GEN');
+  const respuestaIA = await iaService.generarRespuestaChat(prompt, { maxTokens: 120 });
 
   return respuestaIA || "Gracias por tu mensaje. Un agente se pondrá en contacto contigo en breve para ayudarte. 😊";
-
-  return respuesta;
 }
 
-// Enviar mensaje WhatsApp
-async function enviarMensajeWhatsApp(to, message) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_ID;
-  const accessToken = process.env.WHATSAPP_TOKEN;
+// Enviar mensaje WhatsApp usando las credenciales de la agencia (o el env global).
+async function enviarMensajeWhatsApp(to, message, cfg = {}) {
+  const phoneNumberId = cfg.phoneId || process.env.WHATSAPP_PHONE_ID;
+  const accessToken = cfg.token || process.env.WHATSAPP_TOKEN;
 
   if (!phoneNumberId || !accessToken) {
     console.error('❌ WhatsApp credentials not configured');

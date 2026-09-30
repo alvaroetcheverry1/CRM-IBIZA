@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { configuracionApi } from '../services/configuracionApi';
 import { useAgency } from '../context/AgencyContext';
-import { Save, Image as ImageIcon, CreditCard, Building, Link as LinkIcon, UploadCloud, CheckCircle, Users, Edit2, Trash2, UserPlus } from 'lucide-react';
+import { Save, Image as ImageIcon, CreditCard, Building, Link as LinkIcon, UploadCloud, CheckCircle, Users, Edit2, Trash2, UserPlus, MessageSquare } from 'lucide-react';
 import { usuariosApi } from '../services/api';
 
 export default function Configuracion() {
@@ -16,8 +16,9 @@ export default function Configuracion() {
   const [formData, setFormData] = useState({
     nombreComercial: '', nombreLegal: '', cif: '', direccion: '', 
     telefonoOficial: '', whatsapp: '', emailOficial: '', 
-    colorPrincipal: '#1890ff', webUrl: '', instagram: '', facebook: '',
-    logoUrl: '', watermarkUrl: '', firmaUrl: '', iban: '', idiomaPrincipal: 'es'
+    colorPrincipal: '#1A3A5C', webUrl: '', instagram: '', facebook: '',
+    logoUrl: '', watermarkUrl: '', firmaUrl: '', iban: '', idiomaPrincipal: 'es',
+    whatsappPhoneId: '', whatsappToken: '', whatsappVerifyToken: '', whatsappAppSecret: ''
   });
 
   const [facturacion, setFacturacion] = useState({ iva: 21, irpf: 0, prefijo: 'F-' });
@@ -33,7 +34,7 @@ export default function Configuracion() {
         telefonoOficial: config.telefonoOficial || '',
         whatsapp: config.whatsapp || '',
         emailOficial: config.emailOficial || '',
-        colorPrincipal: config.colorPrincipal || '#1890ff',
+        colorPrincipal: config.colorPrincipal || '#1A3A5C',
         webUrl: config.webUrl || '',
         instagram: config.instagram || '',
         facebook: config.facebook || '',
@@ -41,7 +42,11 @@ export default function Configuracion() {
         watermarkUrl: config.watermarkUrl || '',
         firmaUrl: config.firmaUrl || '',
         iban: config.iban || '',
-        idiomaPrincipal: config.idiomaPrincipal || 'es'
+        idiomaPrincipal: config.idiomaPrincipal || 'es',
+        whatsappPhoneId: config.whatsappPhoneId || '',
+        whatsappToken: config.whatsappToken || '',
+        whatsappVerifyToken: config.whatsappVerifyToken || '',
+        whatsappAppSecret: config.whatsappAppSecret || ''
       });
 
       if (config.configFacturacion) {
@@ -177,6 +182,7 @@ export default function Configuracion() {
     { id: 'legal', label: 'Legales y Bancarios', icon: Building },
     { id: 'facturacion', label: 'Facturación', icon: CreditCard },
     { id: 'portales', label: 'Portales Inmobiliarios', icon: LinkIcon },
+    { id: 'integraciones', label: 'WhatsApp / Integraciones', icon: MessageSquare },
     { id: 'equipo', label: 'Equipo y Usuarios', icon: Users }
   ];
 
@@ -410,6 +416,36 @@ export default function Configuracion() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {activeTab === 'integraciones' && (
+              <div className="form-grid">
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <h3 style={{ margin: '0 0 4px' }}>WhatsApp Business (Meta)</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+                    Conecta el número de WhatsApp de tu agencia. Estos datos se obtienen en el panel
+                    de Meta for Developers. El webhook a configurar en Meta es
+                    <code> {`{URL del servidor}`}/api/whatsapp/webhook</code>.
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phone Number ID</label>
+                  <input type="text" className="form-input" name="whatsappPhoneId" value={formData.whatsappPhoneId} onChange={handleChange} placeholder="Ej. 123456789012345" autoComplete="off" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Verify Token (webhook)</label>
+                  <input type="text" className="form-input" name="whatsappVerifyToken" value={formData.whatsappVerifyToken} onChange={handleChange} placeholder="Token que pondrás en Meta" autoComplete="off" />
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label">Access Token (permanente)</label>
+                  <input type="password" className="form-input" name="whatsappToken" value={formData.whatsappToken} onChange={handleChange} placeholder="Token de acceso de la app de Meta" autoComplete="off" />
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label">App Secret</label>
+                  <input type="password" className="form-input" name="whatsappAppSecret" value={formData.whatsappAppSecret} onChange={handleChange} placeholder="Secreto de la app (verifica la firma del webhook)" autoComplete="off" />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Si lo defines, el webhook rechazará peticiones sin firma válida.</span>
+                </div>
               </div>
             )}
 

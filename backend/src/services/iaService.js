@@ -901,6 +901,33 @@ No inventes datos numéricos si no hay indicios firmes.`;
   }
 
   /**
+   * Genera una respuesta de chat breve a partir de un prompt libre.
+   * Usado por el bot de WhatsApp. Devuelve null si la IA no está disponible o falla,
+   * para que el llamador use su propio texto de fallback.
+   * @param {string} prompt
+   * @param {object} [opts] - { maxTokens, temperature }
+   * @returns {Promise<string|null>}
+   */
+  async generarRespuestaChat(prompt, opts = {}) {
+    if (!this.enabled) {
+      logger.info('IA (mock): generarRespuestaChat sin API key');
+      return null;
+    }
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: opts.maxTokens || 200,
+        temperature: opts.temperature ?? 0.7,
+      });
+      return response.choices[0]?.message?.content?.trim() || null;
+    } catch (err) {
+      logger.error('[IA] Error en generarRespuestaChat:', err.message);
+      return null;
+    }
+  }
+
+  /**
    * Genera un email de bienvenida personalizado según el perfil del cliente/lead
    */
   async generarEmailBienvenidaPersonalizado(cliente) {

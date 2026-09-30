@@ -11,8 +11,57 @@ function getToken() {
   return localStorage.getItem('accessToken');
 }
 
+/** Cierra la sesión y redirige al login (salvo que ya estemos en páginas públicas). */
+function forzarLogout() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  const publicas = ['/login', '/registro', '/panel-interno'];
+  if (!publicas.includes(window.location.pathname)) {
+    window.location.href = '/login';
+  }
+}
+
+// Evita disparar varios refresh en paralelo: si ya hay uno en curso, se reutiliza.
+let refreshPromise = null;
+
+/**
+ * Intenta renovar el access token usando el refreshToken guardado.
+ * Devuelve el nuevo accessToken, o null si no se pudo renovar.
+ */
+async function intentarRefresh() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return null;
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.accessToken) {
+          localStorage.setItem('accessToken', data.accessToken);
+          if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+          return data.accessToken;
+        }
+        return null;
+      } catch {
+        return null;
+      } finally {
+        // Se limpia tras resolver para permitir futuros refresh.
+        setTimeout(() => { refreshPromise = null; }, 0);
+      }
+    })();
+  }
+  return refreshPromise;
+}
+
 /** Helper para llamadas HTTP autenticadas al backend real */
-export async function apiCall(path, options = {}) {
+export async function apiCall(path, options = {}, _reintento = false) {
   const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
@@ -22,12 +71,18 @@ export async function apiCall(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+
     if (res.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/registro') {
-        window.location.href = '/login';
+      // Token caducado: intentar refrescar y reintentar la petición una sola vez.
+      const esExpirado = body.code === 'TOKEN_EXPIRED';
+      if (esExpirado && !_reintento) {
+        const nuevoToken = await intentarRefresh();
+        if (nuevoToken) {
+          return apiCall(path, options, true);
+        }
       }
+      // Sin refresh posible (o ya reintentado): cerrar sesión.
+      forzarLogout();
     }
     throw new Error(body.error || body.detail || `HTTP ${res.status}`);
   }
@@ -35,7 +90,7 @@ export async function apiCall(path, options = {}) {
 }
 
 /** Helper para subidas multipart (FormData) */
-export async function apiUpload(path, formData) {
+export async function apiUpload(path, formData, _reintento = false) {
   const token = getToken();
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -45,6 +100,13 @@ export async function apiUpload(path, formData) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      if (body.code === 'TOKEN_EXPIRED' && !_reintento) {
+        const nuevoToken = await intentarRefresh();
+        if (nuevoToken) return apiUpload(path, formData, true);
+      }
+      forzarLogout();
+    }
     throw new Error(body.error || body.detail || `HTTP ${res.status}`);
   }
   return res.json();
