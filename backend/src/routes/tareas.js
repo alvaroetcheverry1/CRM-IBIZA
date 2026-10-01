@@ -69,6 +69,14 @@ router.put('/:id', authenticate, async (req, res) => {
   try {
     const { titulo, descripcion, fechaVencimiento, tipo, prioridad, completada } = req.body;
 
+    // Multi-tenant: validar que la tarea pertenece a la agencia del usuario.
+    const agenciaId = req.user.rol === 'SUPERADMIN' ? null : (req.user.agenciaId || null);
+    const existente = await prisma.tarea.findUnique({ where: { id: req.params.id }, select: { agenciaId: true } });
+    if (!existente) return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (agenciaId !== null && existente.agenciaId !== agenciaId) {
+      return res.status(403).json({ error: 'No tienes acceso a esta tarea' });
+    }
+
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
     if (descripcion !== undefined) data.descripcion = descripcion;
@@ -96,9 +104,15 @@ router.put('/:id', authenticate, async (req, res) => {
 // DELETE /api/tareas/:id — Eliminar una tarea
 router.delete('/:id', authenticate, async (req, res) => {
   try {
-    await prisma.tarea.delete({
-      where: { id: req.params.id }
-    });
+    // Multi-tenant: borra solo si la tarea es de la agencia del usuario.
+    const agenciaId = req.user.rol === 'SUPERADMIN' ? null : (req.user.agenciaId || null);
+    const where = { id: req.params.id };
+    if (agenciaId !== null) where.agenciaId = agenciaId;
+
+    const result = await prisma.tarea.deleteMany({ where });
+    if (result.count === 0) {
+      return res.status(404).json({ error: 'Tarea no encontrada o sin acceso' });
+    }
     res.json({ success: true, message: 'Tarea eliminada correctamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar la tarea', detail: error.message });

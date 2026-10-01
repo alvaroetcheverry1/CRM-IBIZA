@@ -84,11 +84,16 @@ router.put('/read-all', authenticate, async (req, res) => {
 // PUT /api/notificaciones/:id/read — Marcar una notificación como leída
 router.put('/:id/read', authenticate, async (req, res) => {
   try {
-    const notif = await prisma.notificacion.update({
-      where: { id: req.params.id },
-      data: { leida: true }
-    });
-    res.json({ success: true, data: notif });
+    // Multi-tenant: solo marca si la notificación es de la agencia del usuario.
+    const agenciaId = req.user.rol === 'SUPERADMIN' ? null : (req.user.agenciaId || null);
+    const where = { id: req.params.id };
+    if (agenciaId !== null) where.agenciaId = agenciaId;
+
+    const result = await prisma.notificacion.updateMany({ where, data: { leida: true } });
+    if (result.count === 0) {
+      return res.status(404).json({ error: 'Notificación no encontrada o sin acceso' });
+    }
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar notificación', detail: error.message });
   }

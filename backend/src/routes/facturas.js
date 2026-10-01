@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const driveService = require('../services/driveService');
+const { authenticate } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
 
 // Setup multer for memory storage
@@ -23,7 +24,7 @@ const upload = multer({
  * @desc    Sube una factura en PDF a Google Drive (Carpeta 04_Facturas)
  * @access  Private
  */
-router.post('/upload', upload.single('factura'), async (req, res) => {
+router.post('/upload', authenticate, upload.single('factura'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se ha adjuntado ningún archivo PDF.' });

@@ -11,8 +11,13 @@ router.post('/enviar-disponibilidad', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos requeridos o propiedadesIds no es un array' });
   }
   try {
+    // Multi-tenant: solo propiedades de la agencia del usuario (SUPERADMIN ve todas).
+    const where = { id: { in: propiedadesIds } };
+    if (req.user.rol !== 'SUPERADMIN' && req.user.agenciaId) {
+      where.agenciaId = req.user.agenciaId;
+    }
     const propiedades = await prisma.propiedad.findMany({
-      where: { id: { in: propiedadesIds } },
+      where,
       include: { alquilerVacacional: true }
     });
     
