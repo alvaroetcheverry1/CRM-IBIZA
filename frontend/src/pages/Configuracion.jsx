@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { configuracionApi } from '../services/configuracionApi';
 import { useAgency } from '../context/AgencyContext';
-import { Save, Image as ImageIcon, CreditCard, Building, Link as LinkIcon, UploadCloud, CheckCircle, Users, Edit2, Trash2, UserPlus, MessageSquare } from 'lucide-react';
-import { usuariosApi } from '../services/api';
+import { Save, Image as ImageIcon, CreditCard, Building, Link as LinkIcon, UploadCloud, CheckCircle, Users, Edit2, Trash2, UserPlus, MessageSquare, Sparkles } from 'lucide-react';
+import { usuariosApi, suscripcionesApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 export default function Configuracion() {
   const { config, refreshConfig } = useAgency();
@@ -23,6 +24,9 @@ export default function Configuracion() {
 
   const [facturacion, setFacturacion] = useState({ iva: 21, irpf: 0, prefijo: 'F-' });
   const [portales, setPortales] = useState({ idealista: '', fotocasa: '', james_edition: '', customPortals: [] });
+  const [planes, setPlanes] = useState([]);
+  const [suscripcion, setSuscripcion] = useState(null);
+  const [procesandoPago, setProcesandoPago] = useState(false);
 
   useEffect(() => {
     if (config) {
@@ -70,7 +74,35 @@ export default function Configuracion() {
     if (activeTab === 'equipo') {
       loadUsuarios();
     }
+    if (activeTab === 'suscripcion') {
+      suscripcionesApi.getPlanes().then(r => setPlanes(r.data || [])).catch(() => {});
+      suscripcionesApi.getMi().then(r => setSuscripcion(r.data)).catch(() => {});
+    }
   }, [activeTab]);
+
+  const contratarPlan = async (planId) => {
+    setProcesandoPago(true);
+    try {
+      const { url } = await suscripcionesApi.checkout(planId);
+      if (url) window.location.href = url;
+    } catch (err) {
+      toast.error(err.message || 'Pagos no disponibles por ahora. Inténtalo más tarde.');
+    } finally {
+      setProcesandoPago(false);
+    }
+  };
+
+  const gestionarSuscripcion = async () => {
+    setProcesandoPago(true);
+    try {
+      const { url } = await suscripcionesApi.portal();
+      if (url) window.location.href = url;
+    } catch (err) {
+      toast.error(err.message || 'No se pudo abrir la gestión de la suscripción.');
+    } finally {
+      setProcesandoPago(false);
+    }
+  };
 
   const loadUsuarios = async () => {
     try {
@@ -183,6 +215,7 @@ export default function Configuracion() {
     { id: 'facturacion', label: 'Facturación', icon: CreditCard },
     { id: 'portales', label: 'Portales Inmobiliarios', icon: LinkIcon },
     { id: 'integraciones', label: 'WhatsApp / Integraciones', icon: MessageSquare },
+    { id: 'suscripcion', label: 'Suscripción y Plan', icon: Sparkles },
     { id: 'equipo', label: 'Equipo y Usuarios', icon: Users }
   ];
 
@@ -445,6 +478,51 @@ export default function Configuracion() {
                   <label className="form-label">App Secret</label>
                   <input type="password" className="form-input" name="whatsappAppSecret" value={formData.whatsappAppSecret} onChange={handleChange} placeholder="Secreto de la app (verifica la firma del webhook)" autoComplete="off" />
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Si lo defines, el webhook rechazará peticiones sin firma válida.</span>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'suscripcion' && (
+              <div className="form-grid" style={{ display: 'block' }}>
+                <h3 style={{ margin: '0 0 4px' }}>Suscripción y Plan</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 0 }}>
+                  Precios en EUR/mes + IVA · Sin permanencia.
+                </p>
+
+                {/* Estado actual */}
+                {suscripcion ? (
+                  <div style={{ background: 'var(--bg-light)', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem', margin: '1rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Plan actual</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{suscripcion.plan} · <span style={{ fontSize: '0.9rem', fontWeight: 500, color: suscripcion.estado === 'active' ? '#2D8A5E' : '#C9A84C' }}>{suscripcion.estado}</span></div>
+                    </div>
+                    <button type="button" className="btn btn-outline" onClick={gestionarSuscripcion} disabled={procesandoPago}>
+                      Gestionar / Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '1rem 0' }}>
+                    Aún no tienes una suscripción activa. Elige un plan para empezar.
+                  </p>
+                )}
+
+                {/* Catálogo de planes */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+                  {planes.map((plan) => (
+                    <div key={plan.id} style={{ border: plan.recomendado ? '2px solid var(--primary)' : '1px solid var(--border)', borderRadius: 10, padding: '1.25rem' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase' }}>{plan.nivel}</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{plan.nombre}</div>
+                      <div style={{ margin: '0.5rem 0' }}><span style={{ fontSize: '1.6rem', fontWeight: 800 }}>€{plan.precioMensual}</span><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}> /mes + IVA</span></div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {plan.caracteristicas.slice(0, 5).map((c, i) => (
+                          <li key={i} style={{ fontSize: '0.78rem', color: 'var(--text)', display: 'flex', gap: 6 }}><CheckCircle size={13} color="var(--primary)" style={{ flexShrink: 0, marginTop: 2 }} /> {c}</li>
+                        ))}
+                      </ul>
+                      <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={() => contratarPlan(plan.id)} disabled={procesandoPago}>
+                        {suscripcion?.plan === plan.id ? 'Plan actual' : `Contratar ${plan.nombre}`}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
