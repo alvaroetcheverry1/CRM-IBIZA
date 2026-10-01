@@ -17,20 +17,21 @@ no lo hagas, los pagos quedan deshabilitados (las rutas devuelven 503) sin rompe
 
 ## 2. Crear los 3 productos y sus precios
 
-En el panel: **Catálogo de productos → Añadir producto**. Crea uno por plan, cada uno
-con un **precio recurrente mensual en EUR**:
+En el panel: **Catálogo de productos → Añadir producto**. Crea **un producto por plan**
+y, dentro de cada uno, **dos precios recurrentes** (mensual y anual). El anual lleva un
+**15% de descuento**:
 
-| Producto | Precio | Recurrencia |
-|----------|--------|-------------|
-| SYNNER Silver | 199 € | Mensual |
-| SYNNER Gold | 399 € | Mensual |
-| SYNNER Premium | 599 € | Mensual |
+| Producto | Precio mensual | Precio anual (−15%) |
+|----------|---------------|---------------------|
+| SYNNER Silver | 199 € / mes | 2.030 € / año |
+| SYNNER Gold | 399 € / mes | 4.070 € / año |
+| SYNNER Premium | 599 € / mes | 6.110 € / año |
 
 > Nota sobre el IVA: puedes activar **Stripe Tax** para que calcule el IVA
 > automáticamente, o crear los precios con el IVA incluido. Decídelo con tu asesoría.
 
-Al crear cada precio, Stripe genera un **Price ID** con el formato `price_XXXXXXXX`.
-Copia los tres: son los que van en el `.env`.
+Al crear cada precio, Stripe genera un **Price ID** (`price_XXXX`). Copia los **6**:
+3 mensuales y 3 anuales. Son los que van en el `.env`.
 
 ---
 
@@ -64,9 +65,14 @@ Añade estas variables con los valores que copiaste:
 ```
 STRIPE_SECRET_KEY=sk_test_...        # (o sk_live_... en producción)
 STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_SILVER=price_...        # Price ID del plan Silver
-STRIPE_PRICE_GOLD=price_...          # Price ID del plan Gold
-STRIPE_PRICE_PREMIUM=price_...       # Price ID del plan Premium
+# Precios mensuales
+STRIPE_PRICE_SILVER=price_...
+STRIPE_PRICE_GOLD=price_...
+STRIPE_PRICE_PREMIUM=price_...
+# Precios anuales (−15%)
+STRIPE_PRICE_SILVER_ANUAL=price_...
+STRIPE_PRICE_GOLD_ANUAL=price_...
+STRIPE_PRICE_PREMIUM_ANUAL=price_...
 ```
 
 Reinicia el backend. En el arranque verás `[Stripe] Cliente inicializado.` en lugar de
@@ -105,4 +111,5 @@ claves a git.
 |----------|---------------|
 | `STRIPE_SECRET_KEY` | Desarrolladores → Claves de API |
 | `STRIPE_WEBHOOK_SECRET` | Al crear el webhook (paso 3) |
-| `STRIPE_PRICE_SILVER/GOLD/PREMIUM` | Al crear cada precio (paso 2) |
+| `STRIPE_PRICE_SILVER/GOLD/PREMIUM` | Precio mensual de cada plan (paso 2) |
+| `STRIPE_PRICE_*_ANUAL` | Precio anual de cada plan (paso 2) |

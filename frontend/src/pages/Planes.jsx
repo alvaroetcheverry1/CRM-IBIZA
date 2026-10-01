@@ -17,6 +17,7 @@ export default function Planes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [procesando, setProcesando] = useState(null);
+  const [periodo, setPeriodo] = useState('mensual'); // 'mensual' | 'anual'
 
   useEffect(() => {
     suscripcionesApi.getPlanes()
@@ -32,7 +33,7 @@ export default function Planes() {
     }
     setProcesando(planId);
     try {
-      const { url } = await suscripcionesApi.checkout(planId);
+      const { url } = await suscripcionesApi.checkout(planId, periodo);
       if (url) window.location.href = url; // Redirige a Stripe Checkout
     } catch (err) {
       toast.error(err.message || 'No se pudo iniciar el pago. Inténtalo más tarde.');
@@ -50,9 +51,26 @@ export default function Planes() {
 
   return (
     <div style={{ padding: '3rem 1.5rem', background: '#0D1B2A', minHeight: '100vh', color: 'white' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', margin: 0, fontFamily: 'Playfair Display, serif' }}>Planes de SYNNER</h1>
-        <p style={{ color: '#8A9BB0', marginTop: '0.5rem' }}>Precios en EUR/mes + IVA · Sin permanencia · Cancela cuando quieras.</p>
+        <p style={{ color: '#8A9BB0', marginTop: '0.5rem' }}>Precios + IVA · Sin permanencia · Cancela cuando quieras.</p>
+
+        {/* Selector mensual / anual */}
+        <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 30, padding: 4, marginTop: '1.25rem' }}>
+          {[['mensual', 'Mensual'], ['anual', 'Anual · ahorra 15%']].map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => setPeriodo(val)}
+              style={{
+                border: 'none', cursor: 'pointer', borderRadius: 24, padding: '0.5rem 1.25rem', fontSize: '0.85rem', fontWeight: 700,
+                background: periodo === val ? '#C9A84C' : 'transparent',
+                color: periodo === val ? '#0D1B2A' : '#E2E8F0',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', maxWidth: 1100, margin: '0 auto' }}>
@@ -78,8 +96,20 @@ export default function Planes() {
             <h2 style={{ margin: '0.25rem 0 0.25rem', fontSize: '1.6rem' }}>{plan.nombre}</h2>
             <p style={{ color: '#8A9BB0', fontSize: '0.85rem', minHeight: 40, margin: 0 }}>{plan.descripcion}</p>
             <div style={{ margin: '1.25rem 0' }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>€{plan.precioMensual}</span>
-              <span style={{ color: '#8A9BB0' }}> / mes + IVA</span>
+              {periodo === 'anual' ? (
+                <>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>€{plan.precioAnual}</span>
+                  <span style={{ color: '#8A9BB0' }}> / año + IVA</span>
+                  <div style={{ fontSize: '0.8rem', color: '#C9A84C', marginTop: 4 }}>
+                    ≈ €{Math.round(plan.precioAnual / 12)}/mes · ahorras €{plan.precioMensual * 12 - plan.precioAnual}/año
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>€{plan.precioMensual}</span>
+                  <span style={{ color: '#8A9BB0' }}> / mes + IVA</span>
+                </>
+              )}
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
               {plan.caracteristicas.map((c, i) => (

@@ -4,6 +4,9 @@
  * Los `stripePriceId` se rellenan con variables de entorno (se crean en Stripe).
  */
 
+// Descuento aplicado al pago anual (15%).
+const DESCUENTO_ANUAL = 0.15;
+
 const PLANES = {
   SILVER: {
     id: 'SILVER',
@@ -11,8 +14,10 @@ const PLANES = {
     nombre: 'Silver',
     descripcion: 'Para agencias boutique que inician su automatización',
     precioMensual: 199, // EUR, + IVA
+    precioAnual: 2030,  // 199 x 12 x 0,85 ≈ 2030 EUR/año (~169/mes), + IVA
     moneda: 'EUR',
     stripePriceId: process.env.STRIPE_PRICE_SILVER || null,
+    stripePriceIdAnual: process.env.STRIPE_PRICE_SILVER_ANUAL || null,
     limites: {
       referenciasActivas: 50,
       dossiersIAmes: 20,
@@ -35,9 +40,11 @@ const PLANES = {
     nombre: 'Gold',
     descripcion: 'Para agencias en crecimiento con operación continua',
     precioMensual: 399,
+    precioAnual: 4070, // 399 x 12 x 0,85 ≈ 4070 EUR/año (~339/mes), + IVA
     moneda: 'EUR',
     recomendado: true,
     stripePriceId: process.env.STRIPE_PRICE_GOLD || null,
+    stripePriceIdAnual: process.env.STRIPE_PRICE_GOLD_ANUAL || null,
     limites: {
       referenciasActivas: null, // ilimitado
       dossiersIAmes: null,
@@ -62,8 +69,10 @@ const PLANES = {
     nombre: 'Premium',
     descripcion: 'Para redes y grupos que automatizan toda la cadena',
     precioMensual: 599,
+    precioAnual: 6110, // 599 x 12 x 0,85 ≈ 6110 EUR/año (~509/mes), + IVA
     moneda: 'EUR',
     stripePriceId: process.env.STRIPE_PRICE_PREMIUM || null,
+    stripePriceIdAnual: process.env.STRIPE_PRICE_PREMIUM_ANUAL || null,
     usuarioAdicional: 29, // EUR/mes por usuario extra
     limites: {
       referenciasActivas: null,
@@ -87,9 +96,20 @@ const PLANES = {
 
 const PLAN_IDS = Object.keys(PLANES);
 
-// Devuelve el plan a partir de un stripePriceId (para el webhook de Stripe).
+// Devuelve el plan (y el periodo) a partir de un stripePriceId. Usado por el webhook.
 function planPorPriceId(priceId) {
-  return Object.values(PLANES).find((p) => p.stripePriceId && p.stripePriceId === priceId) || null;
+  if (!priceId) return null;
+  for (const p of Object.values(PLANES)) {
+    if (p.stripePriceId === priceId) return { ...p, periodo: 'mensual' };
+    if (p.stripePriceIdAnual === priceId) return { ...p, periodo: 'anual' };
+  }
+  return null;
 }
 
-module.exports = { PLANES, PLAN_IDS, planPorPriceId };
+// Devuelve el stripePriceId según plan y periodo ('mensual' | 'anual').
+function priceIdDe(plan, periodo) {
+  if (!plan) return null;
+  return periodo === 'anual' ? plan.stripePriceIdAnual : plan.stripePriceId;
+}
+
+module.exports = { PLANES, PLAN_IDS, DESCUENTO_ANUAL, planPorPriceId, priceIdDe };

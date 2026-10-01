@@ -7,14 +7,14 @@ const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
 const { prisma } = require('../utils/prisma');
 const { logger } = require('../utils/logger');
-const { PLANES, planPorPriceId } = require('../config/planes');
+const { PLANES, planPorPriceId, priceIdDe } = require('../config/planes');
 const { stripeService } = require('../services/stripeService');
 
 // ─── GET /api/suscripciones/planes ───────────────────────────
 // Catálogo público de planes (para la página de precios).
 router.get('/planes', (req, res) => {
   // No exponer los stripePriceId internos.
-  const publicos = Object.values(PLANES).map(({ stripePriceId, ...resto }) => resto);
+  const publicos = Object.values(PLANES).map(({ stripePriceId, stripePriceIdAnual, ...resto }) => resto);
   res.json({ data: publicos });
 });
 
@@ -37,11 +37,12 @@ router.post('/checkout', authenticate, requireRole('DIRECTOR', 'SUPERADMIN'), as
     if (!stripeService.enabled) {
       return res.status(503).json({ error: 'Pagos no disponibles temporalmente' });
     }
-    const { planId } = req.body;
+    const { planId, periodo = 'mensual' } = req.body;
     const plan = PLANES[planId];
     if (!plan) return res.status(400).json({ error: 'Plan no válido' });
-    if (!plan.stripePriceId) {
-      return res.status(503).json({ error: `El plan ${plan.nombre} no está configurado en Stripe` });
+    const priceId = priceIdDe(plan, periodo);
+    if (!priceId) {
+      return res.status(503).json({ error: `El plan ${plan.nombre} (${periodo}) no está configurado en Stripe` });
     }
 
     const agenciaId = req.user.agenciaId;
@@ -51,7 +52,7 @@ router.post('/checkout', authenticate, requireRole('DIRECTOR', 'SUPERADMIN'), as
     const frontend = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 
     const { url } = await stripeService.crearCheckoutSuscripcion({
-      priceId: plan.stripePriceId,
+      priceId,
       agenciaId,
       email: req.user.email,
       customerId: subExistente?.stripeCustomerId || null,

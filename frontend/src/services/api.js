@@ -337,7 +337,7 @@ export const propuestasApi = {
 export const suscripcionesApi = {
   getPlanes: () => apiCall('/suscripciones/planes'),
   getMi: () => apiCall('/suscripciones/mi'),
-  checkout: (planId) => apiCall('/suscripciones/checkout', { method: 'POST', body: JSON.stringify({ planId }) }),
+  checkout: (planId, periodo = 'mensual') => apiCall('/suscripciones/checkout', { method: 'POST', body: JSON.stringify({ planId, periodo }) }),
   portal: () => apiCall('/suscripciones/portal', { method: 'POST', body: JSON.stringify({}) }),
 };
 
