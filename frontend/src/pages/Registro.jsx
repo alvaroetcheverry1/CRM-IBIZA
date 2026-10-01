@@ -13,6 +13,7 @@ export default function Registro() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [exito, setExito] = useState(false);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [form, setForm] = useState({
     nombreAgencia: '',
     nombre: '',
@@ -34,6 +35,10 @@ export default function Registro() {
     }
     if (form.password.length < 8) {
       toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!aceptaTerminos) {
+      toast.error('Debes aceptar los Términos y la Política de Privacidad');
       return;
     }
 
@@ -171,6 +176,12 @@ export default function Registro() {
               </div>
             </div>
           </div>
+
+          {/* Aceptación de términos */}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: '0.78rem', color: '#4A5568' }}>
+            <input type="checkbox" required checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)} style={{ marginTop: 2 }} />
+            <span>He leído y acepto los <a href="/legal/terminos" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Términos de Servicio</a> y la <a href="/legal/privacidad" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Política de Privacidad</a>.</span>
+          </label>
 
           {/* Aviso PENDIENTE */}
           <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '0.75rem 1rem', fontSize: '0.78rem', color: '#1D4ED8' }}>

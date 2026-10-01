@@ -334,6 +334,13 @@ export const propuestasApi = {
   enviarDisponibilidad: (data) => apiCall('/propuestas/enviar-disponibilidad', { method: 'POST', body: JSON.stringify(data) }),
 };
 
+export const suscripcionesApi = {
+  getPlanes: () => apiCall('/suscripciones/planes'),
+  getMi: () => apiCall('/suscripciones/mi'),
+  checkout: (planId) => apiCall('/suscripciones/checkout', { method: 'POST', body: JSON.stringify({ planId }) }),
+  portal: () => apiCall('/suscripciones/portal', { method: 'POST', body: JSON.stringify({}) }),
+};
+
 export const matchmakingApi = {
   getMatches: (propiedadId) => apiCall(`/matchmaking/${propiedadId}`),
   getMatchesForCliente: (clienteId) => apiCall(`/matchmaking/cliente/${clienteId}`),

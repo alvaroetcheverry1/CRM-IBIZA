@@ -21,7 +21,7 @@ model Agencia {
   nombre        String
   email         String    @unique
   passwordHash  String?   // Para login email+contraseña del dueño de la agencia
-  plan          String    @default("TRIAL") // TRIAL | STARTER | PRO | ELITE
+  plan          String    @default("TRIAL") // TRIAL | SILVER | GOLD | PREMIUM
   estado        String    @default("PENDIENTE") // PENDIENTE | ACTIVA | SUSPENDIDA
   trialExpira   DateTime?
   telefono      String?
@@ -45,6 +45,7 @@ model Agencia {
   notificaciones    Notificacion[]
   tareas            Tarea[]
   facturas          Factura[]
+  suscripcion       Suscripcion?
 }
 
 model Usuario {
@@ -529,6 +530,28 @@ model Factura {
 
   creadoEn         DateTime  @default(now())
   actualizadoEn    DateTime  @updatedAt
+
+  @@index([agenciaId])
+}
+
+model Suscripcion {
+  id                   String    @id @default(cuid())
+  agenciaId            String    @unique
+  agencia              Agencia   @relation(fields: [agenciaId], references: [id], onDelete: Cascade)
+
+  plan                 String    // SILVER | GOLD | PREMIUM
+  // Estado alineado con Stripe: trialing | active | past_due | canceled | incomplete | unpaid
+  estado               String    @default("incomplete")
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+
+  periodoActualFin     DateTime? // fin del periodo pagado actual
+  cancelaAlFinalPeriodo Boolean  @default(false)
+
+  creadoEn             DateTime  @default(now())
+  actualizadoEn        DateTime  @updatedAt
 
   @@index([agenciaId])
 }

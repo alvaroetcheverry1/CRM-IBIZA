@@ -78,6 +78,12 @@ app.use(cors({
 }));
 
 // ─── Body Parsing ──────────────────────────────────────────
+// ─── Webhook de Stripe (ANTES del json parser: necesita el raw body) ──────
+app.post('/api/suscripciones/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const { manejarWebhookStripe } = require('./services/stripeWebhook');
+  manejarWebhookStripe(req, res);
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -120,6 +126,7 @@ app.use('/api/scraper', scraperRoutes);
 app.use('/api/configuracion', configuracionRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/catalogos', catalogosRoutes);
+app.use('/api/suscripciones', require('./routes/suscripciones'));
 app.use('/api/search', searchRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 app.use('/api/tareas', tareasRoutes);
