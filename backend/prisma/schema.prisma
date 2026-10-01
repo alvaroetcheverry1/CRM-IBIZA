@@ -44,6 +44,7 @@ model Agencia {
   catalogos         Catalogo[]
   notificaciones    Notificacion[]
   tareas            Tarea[]
+  facturas          Factura[]
 }
 
 model Usuario {
@@ -499,4 +500,35 @@ model Tarea {
   propiedad   Propiedad? @relation(fields: [propiedadId], references: [id], onDelete: SetNull)
   usuarioId   String?
   usuario     Usuario?   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+}
+
+model Factura {
+  id               String    @id @default(cuid())
+  numero           String
+  fechaEmision     DateTime  @default(now())
+  fechaVencimiento DateTime?
+  estado           String    @default("PENDIENTE") // BORRADOR | PENDIENTE | PAGADA | CANCELADA
+
+  // Datos del cliente (desnormalizados para conservar el histórico de la factura)
+  clienteId        String?
+  clienteNombre    String?
+  propiedadId      String?
+  propiedadNombre  String?
+
+  // Conceptos de la factura como JSON string:
+  // [{ descripcion, cantidad, precioUnitario, impuestoPorcentaje }]
+  conceptos        String    @default("[]")
+  subtotal         Decimal   @default(0)
+  totalImpuestos   Decimal   @default(0)
+  total            Decimal   @default(0)
+  notas            String?
+  urlPdf           String?   // URL del PDF subido a Drive/Storage
+
+  agenciaId        String?
+  agencia          Agencia?  @relation(fields: [agenciaId], references: [id], onDelete: Cascade)
+
+  creadoEn         DateTime  @default(now())
+  actualizadoEn    DateTime  @updatedAt
+
+  @@index([agenciaId])
 }

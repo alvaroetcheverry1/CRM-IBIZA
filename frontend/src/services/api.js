@@ -317,52 +317,17 @@ export const pagosApi = {
   },
 };
 
-// NOTA: el backend aún no expone CRUD de facturas (solo /facturas/upload).
-// Estas operaciones funcionan en memoria (mock) hasta que se implementen los
-// endpoints reales. Ver roadmap Fase 5 (rutas menores) / Fase 6 (facturación).
+// Facturas — CRUD real contra el backend (/api/facturas).
 export const facturasApi = {
-  list: async () => {
-    await delay(500);
-    return { data: MOCK_DATA.facturas };
-  },
-  create: async (data) => {
-    await delay(600);
-    const newDoc = {
-      ...data,
-      id: `f-${Date.now()}`,
-      numero: `F-${new Date().getFullYear()}-${String(MOCK_DATA.facturas.length + 1).padStart(3, '0')}`
-    };
-    MOCK_DATA.facturas.unshift(newDoc);
-    return newDoc;
-  },
-  update: async (id, data) => {
-    await delay(500);
-    const idx = MOCK_DATA.facturas.findIndex(f => f.id === id);
-    if (idx >= 0) {
-      MOCK_DATA.facturas[idx] = { ...MOCK_DATA.facturas[idx], ...data };
-      return MOCK_DATA.facturas[idx];
-    }
-    throw new Error('Not found');
-  },
-  delete: async (id) => {
-    await delay(400);
-    MOCK_DATA.facturas = MOCK_DATA.facturas.filter(f => f.id !== id);
-    return { success: true };
-  },
+  list: async () => apiCall('/facturas'),
+  create: async (data) => apiCall('/facturas', { method: 'POST', body: JSON.stringify(data) }),
+  update: async (id, data) => apiCall(`/facturas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: async (id) => apiCall(`/facturas/${id}`, { method: 'DELETE' }),
   uploadToDrive: async (blob, filename) => {
     const formData = new FormData();
     formData.append('factura', blob, filename);
-    try {
-      return await apiUpload('/facturas/upload', formData);
-    } catch {
-      await delay(1500);
-      return {
-        success: true,
-        message: 'Factura subida exitosamente a Google Drive (Mock).',
-        url: `https://drive.google.com/mock/${filename}`
-      };
-    }
-  }
+    return await apiUpload('/facturas/upload', formData);
+  },
 };
 
 export const propuestasApi = {
