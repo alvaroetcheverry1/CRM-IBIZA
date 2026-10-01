@@ -61,7 +61,7 @@ router.post('/checkout', authenticate, requireRole('DIRECTOR', 'SUPERADMIN'), as
     });
     res.json({ url });
   } catch (err) {
-    logger.error('[Stripe] Error en checkout:', err.message);
+    logger.error(`[Stripe] Error en checkout: ${err.type || ''} ${err.message || err}`);
     res.status(500).json({ error: 'No se pudo iniciar el pago' });
   }
 });

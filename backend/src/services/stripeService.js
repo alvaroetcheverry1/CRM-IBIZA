@@ -9,7 +9,8 @@ const secretKey = process.env.STRIPE_SECRET_KEY || null;
 let stripe = null;
 if (secretKey) {
   // eslint-disable-next-line global-require
-  stripe = require('stripe')(secretKey);
+  // Fijamos una versión de API reciente (requerida por Managed Payments).
+  stripe = require('stripe')(secretKey, { apiVersion: '2025-03-31.basil' });
   logger.info('[Stripe] Cliente inicializado.');
 } else {
   logger.info('[Stripe] STRIPE_SECRET_KEY no configurada; pagos deshabilitados.');
