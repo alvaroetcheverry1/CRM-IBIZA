@@ -21,7 +21,7 @@ model Agencia {
   nombre        String
   email         String    @unique
   passwordHash  String?   // Para login email+contraseña del dueño de la agencia
-  plan          String    @default("TRIAL") // TRIAL | SILVER | GOLD | PREMIUM
+  plan          String    @default("TRIAL") // TRIAL | CORE | INTELLIGENCE | AUTONOMOUS
   estado        String    @default("PENDIENTE") // PENDIENTE | ACTIVA | SUSPENDIDA
   trialExpira   DateTime?
   telefono      String?

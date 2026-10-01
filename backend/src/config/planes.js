@@ -8,16 +8,16 @@
 const DESCUENTO_ANUAL = 0.15;
 
 const PLANES = {
-  SILVER: {
-    id: 'SILVER',
+  CORE: {
+    id: 'CORE',
     nivel: 'NIVEL I',
-    nombre: 'Silver',
+    nombre: 'Core',
     descripcion: 'Para agencias boutique que inician su automatización',
     precioMensual: 199, // EUR, + IVA
     precioAnual: 2030,  // 199 x 12 x 0,85 ≈ 2030 EUR/año (~169/mes), + IVA
     moneda: 'EUR',
-    stripePriceId: process.env.STRIPE_PRICE_SILVER || null,
-    stripePriceIdAnual: process.env.STRIPE_PRICE_SILVER_ANUAL || null,
+    stripePriceId: process.env.STRIPE_PRICE_CORE || null,
+    stripePriceIdAnual: process.env.STRIPE_PRICE_CORE_ANUAL || null,
     limites: {
       referenciasActivas: 50,
       dossiersIAmes: 20,
@@ -34,17 +34,17 @@ const PLANES = {
       '2 usuarios incluidos',
     ],
   },
-  GOLD: {
-    id: 'GOLD',
+  INTELLIGENCE: {
+    id: 'INTELLIGENCE',
     nivel: 'NIVEL II',
-    nombre: 'Gold',
+    nombre: 'Intelligence',
     descripcion: 'Para agencias en crecimiento con operación continua',
     precioMensual: 399,
     precioAnual: 4070, // 399 x 12 x 0,85 ≈ 4070 EUR/año (~339/mes), + IVA
     moneda: 'EUR',
     recomendado: true,
-    stripePriceId: process.env.STRIPE_PRICE_GOLD || null,
-    stripePriceIdAnual: process.env.STRIPE_PRICE_GOLD_ANUAL || null,
+    stripePriceId: process.env.STRIPE_PRICE_INTELLIGENCE || null,
+    stripePriceIdAnual: process.env.STRIPE_PRICE_INTELLIGENCE_ANUAL || null,
     limites: {
       referenciasActivas: null, // ilimitado
       dossiersIAmes: null,
@@ -63,16 +63,16 @@ const PLANES = {
       '5 usuarios con roles RBAC',
     ],
   },
-  PREMIUM: {
-    id: 'PREMIUM',
+  AUTONOMOUS: {
+    id: 'AUTONOMOUS',
     nivel: 'NIVEL III',
-    nombre: 'Premium',
+    nombre: 'Autonomous',
     descripcion: 'Para redes y grupos que automatizan toda la cadena',
     precioMensual: 599,
     precioAnual: 6110, // 599 x 12 x 0,85 ≈ 6110 EUR/año (~509/mes), + IVA
     moneda: 'EUR',
-    stripePriceId: process.env.STRIPE_PRICE_PREMIUM || null,
-    stripePriceIdAnual: process.env.STRIPE_PRICE_PREMIUM_ANUAL || null,
+    stripePriceId: process.env.STRIPE_PRICE_AUTONOMOUS || null,
+    stripePriceIdAnual: process.env.STRIPE_PRICE_AUTONOMOUS_ANUAL || null,
     usuarioAdicional: 29, // EUR/mes por usuario extra
     limites: {
       referenciasActivas: null,
@@ -82,7 +82,7 @@ const PLANES = {
       usuarios: 10,
     },
     caracteristicas: [
-      'Todo lo incluido en Gold',
+      'Todo lo incluido en Intelligence',
       'Marca blanca integral con dominio propio',
       'Agentes legal y de captación',
       'Sindicación JamesEdition ultra-lujo',

@@ -154,7 +154,7 @@ router.put('/agencias/:id/suspender', async (req, res) => {
 router.put('/agencias/:id/plan', async (req, res) => {
   try {
     const { plan } = req.body;
-    if (!['TRIAL', 'SILVER', 'GOLD', 'PREMIUM'].includes(plan)) {
+    if (!['TRIAL', 'CORE', 'INTELLIGENCE', 'AUTONOMOUS'].includes(plan)) {
       return res.status(400).json({ error: 'Plan no válido' });
     }
     const agencia = await prisma.agencia.update({
