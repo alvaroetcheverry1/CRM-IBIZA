@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Roadmap: siguiente tarea",
+      "trigger": "Stop",
+      "action": {
+        "type": "agent",
+        "prompt": "Antes de ceder el turno, consulta .kiro/steering/roadmap-mercado.md. Si quedan tareas sin completar (`[ ]`), indica en 1-2 líneas cuál es la siguiente tarea pendiente y recuerda al usuario que puede escribir \"sigue\" para ejecutarla. Si una tarea requiere una decisión suya (credencial, valor de configuración, acción irreversible), formúlale directamente la pregunta concreta. Si todo el roadmap está completo, felicítale y no hagas nada más."
+      }
+    }
+  ]
+}
