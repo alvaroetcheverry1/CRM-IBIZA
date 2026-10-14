@@ -1,5 +1,4 @@
 {
-  "//": "Ajusta 'destination' a la URL real del backend en produccion antes de desplegar.",
   "rewrites": [
     {
       "source": "/api/:path*",
