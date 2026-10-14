@@ -4,6 +4,18 @@ const { authenticate } = require('../middleware/auth');
 const { prisma } = require('../utils/prisma');
 const { iaService } = require('../services/iaService');
 
+// Cliente OpenAI (solo si hay API key). Si no, el matchmaking funciona igual
+// con el score por reglas, sin el enriquecimiento con IA.
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  try {
+    const OpenAI = require('openai');
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  } catch (e) {
+    openai = null;
+  }
+}
+
 /** Calcula score 0-100 de compatibilidad cliente-propiedad */
 function calcScore(cliente, propiedad) {
   let score = 0;
