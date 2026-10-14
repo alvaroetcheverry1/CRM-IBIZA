@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://synner-crm-backend.onrender.com/api/:path*"
+      "destination": "https://crm-ibiza.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
