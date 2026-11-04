@@ -88,7 +88,10 @@ permiso para "empezar una fase".
 - [x] Health check `/health` (existente) + HEALTHCHECK de contenedor.
 - [x] `DESPLIEGUE.md`: guía completa (Supabase/Render/Vercel/Docker) + checklist de
       seguridad + creación del primer superadmin.
-- [ ] (Opcional) Datos de demo/seed para una cuenta de prueba — pendiente si se desea.
+- [x] (Opcional) Datos de demo/seed para una cuenta de prueba: `backend/prisma/seed-demo.js`
+  crea una agencia demo AISLADA (`demo@synner.tech` / `Demo1234!`, plan INTELLIGENCE) con
+  3 propiedades (vacacional/larga/venta), 2 propietarios, 3 clientes, 1 reserva. Idempotente
+  y multi-tenant (no borra datos de otras agencias). Ejecutado y verificado en Supabase.
   NOTA: `docker compose config` no se pudo validar aquí (Docker no instalado en el entorno).
 
 ## ⏳ Fase 5 — Calidad y cierre
@@ -129,7 +132,8 @@ decisiones o cuentas del usuario (marcadas con 👤).
 
 ### Legal y cumplimiento (RGPD)
 - [x] Borradores en `legal/`: Términos, Privacidad y Cookies (marcados como BORRADOR).
-- [x] Aceptación de Términos y Privacidad obligatoria en el registro.
+- [x] Aceptación de Términos y Privacidad obligatoria en el registro (con evidencia:
+      fecha, versión, IP y user-agent guardados en `Agencia`; columnas añadidas a Supabase).
 - [ ] 👤 **Revisión por abogado** de los tres documentos (RGPD/LOPDGDD) antes de publicar.
   NOTA: borradores v2 completos redactados (legal/*_BORRADOR.md); faltan datos de empresa `[ ]` y validación legal.
 - [ ] 👤 Contrato de encargado de tratamiento (agencia ↔ SYNNER). Revisión legal.
