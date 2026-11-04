@@ -105,7 +105,7 @@ router.post('/google', async (req, res) => {
 // Registro de NUEVA AGENCIA con email + contraseña
 // Crea la Agencia + un Usuario DIRECTOR para esa agencia
 router.post('/register', async (req, res) => {
-  const { nombreAgencia, email, password, nombre, apellidos, telefono } = req.body;
+  const { nombreAgencia, email, password, nombre, apellidos, telefono, aceptaLegal, legalVersion } = req.body;
 
   if (!nombreAgencia || !email || !password || !nombre) {
     return res.status(400).json({ error: 'Campos requeridos: nombreAgencia, email, password, nombre' });
@@ -114,6 +114,14 @@ router.post('/register', async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
   }
+
+  if (!aceptaLegal) {
+    return res.status(400).json({ error: 'Debes aceptar los Términos, la Política de Privacidad y el Contrato de Encargado de Tratamiento' });
+  }
+
+  // Evidencia de aceptación legal (fecha, versión, IP y navegador)
+  const legalIp = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim() || null;
+  const legalUserAgent = (req.headers['user-agent'] || '').toString().slice(0, 500) || null;
 
   try {
     // Verificar que el email no esté ya registrado
@@ -139,6 +147,11 @@ router.post('/register', async (req, res) => {
           telefono: telefono || null,
           estado: 'PENDIENTE', // Requiere activación manual del superadmin
           plan: 'TRIAL',
+          legalAceptado: true,
+          legalAceptadoEn: new Date(),
+          legalVersion: legalVersion || '2.0',
+          legalIp,
+          legalUserAgent,
         },
       });
 

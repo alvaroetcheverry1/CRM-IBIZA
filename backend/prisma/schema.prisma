@@ -28,6 +28,14 @@ model Agencia {
   pais          String?   @default("España")
   notas         String?   // Notas internas del superadmin
   activadaEn    DateTime?
+
+  // Evidencia de aceptación legal (Términos + Privacidad + DPA) en el registro
+  legalAceptado        Boolean   @default(false)
+  legalAceptadoEn      DateTime?
+  legalVersion         String?   // Versión de los documentos aceptados (p. ej. "2.0")
+  legalIp              String?   // IP desde la que se aceptó
+  legalUserAgent       String?   // Navegador/dispositivo que aceptó
+
   creadoEn      DateTime  @default(now())
   actualizadoEn DateTime  @updatedAt
 

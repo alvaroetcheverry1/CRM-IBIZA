@@ -51,6 +51,8 @@ export default function Registro() {
         email: form.email,
         password: form.password,
         telefono: form.telefono,
+        aceptaLegal: true,
+        legalVersion: '2.0',
       });
       setExito(true);
     } catch (err) {
