@@ -1,106 +1,115 @@
-> ⚠️ **BORRADOR v2 — PENDIENTE DE REVISIÓN POR ABOGADO (RGPD / LOPDGDD).** Redactado a
-> partir del funcionamiento real de SYNNER. No es asesoramiento jurídico. Los campos
-> `[CORCHETES]` deben completarse o confirmarse.
+# POLÍTICA DE PRIVACIDAD DE SYNNER
+**Responsable del servicio:** INMOCHATIA, SOCIEDAD LIMITADA
+**Versión:** 2.0 – Borrador para revisión jurídica
+**Última actualización:** 4 de noviembre de 2026
 
-# Política de Privacidad — SYNNER
+> ⚠️ Borrador de trabajo, no es asesoramiento jurídico. Debe revisarlo un abogado
+> especializado en protección de datos antes de publicarse.
 
-**Versión:** 2.0 · **Última actualización:** [FECHA]
+## 1. RESPONSABLE DEL TRATAMIENTO
 
-## 1. Responsable del tratamiento
-[RAZÓN SOCIAL] · CIF [CIF] · [DIRECCIÓN] · Email de privacidad: [EMAIL]
-Delegado de Protección de Datos: [no designado / contacto] (valorar si es obligatorio).
+Cuando INMOCHATIA trata datos personales para sus propias finalidades, el responsable es:
 
-## 2. Doble rol (importante)
-| Datos | Rol de SYNNER |
-|---|---|
-| Cuenta de la agencia, usuarios, facturación, uso de la plataforma | **Responsable** del tratamiento |
-| Datos de propietarios, clientes, inquilinos y leads que la agencia introduce | **Encargado** del tratamiento (por cuenta de la agencia, que es la responsable). Ver Contrato de Encargado de Tratamiento (DPA) |
+**INMOCHATIA, SOCIEDAD LIMITADA**
+NIF: B27678515
+Domicilio: Carrer del Flamenc, 19, 07817, Sant Josep de sa Talaia, Ibiza, Illes Balears.
+Correo electrónico: info@synner.tech
+Servicio: SYNNER – Plataforma CRM inteligente para el sector inmobiliario.
 
-Si eres cliente o propietario de una agencia que usa SYNNER, **tu responsable es esa
-agencia**: dirige tus solicitudes de derechos a ella.
+En adelante, «INMOCHATIA» o «SYNNER».
 
-## 3. Datos que tratamos
-**Como responsable (agencias y usuarios):**
-- Identificación y contacto: nombre, email, teléfono, cargo/rol.
-- Datos de la agencia: razón social, CIF, dirección, datos de facturación, logo y color.
-- Credenciales: contraseña (almacenada con hash), tokens de sesión, correo recordado
-  en el navegador si el usuario lo elige.
-- Suscripción y pago: plan, estado, identificadores de Stripe (no almacenamos el
-  número completo de tarjeta).
-- Uso y seguridad: registros de actividad, auditoría y direcciones IP.
+## 2. ALCANCE Y ROLES DE PROTECCIÓN DE DATOS
 
-**Como encargado (introducidos por la agencia):**
-- Propietarios y clientes: nombre, contacto, NIF, IBAN, preferencias, notas.
-- Inquilinos y reservas: NIF, fechas, pagos, fianzas.
-- Documentos, fotos, facturas y comunicaciones (incl. mensajes de WhatsApp si la
-  agencia activa el bot).
-Los campos NIF, IBAN y CIF se cifran en reposo.
+SYNNER es una plataforma SaaS dirigida a profesionales y empresas del sector inmobiliario. INMOCHATIA puede actuar en dos posiciones distintas:
 
-## 4. Finalidades y bases jurídicas
+**2.1. Como responsable del tratamiento**, respecto de los datos para gestionar su relación con los usuarios y clientes de SYNNER: registro y administración de cuentas, identificación de usuarios y empresas, suscripciones y facturación, cobros y pagos, atención y soporte, seguridad, prevención del fraude y control de accesos, gestión de incidencias, cumplimiento de obligaciones legales, comunicaciones del servicio y comunicaciones comerciales cuando exista base jurídica.
+
+**2.2. Como encargado del tratamiento**, cuando una agencia incorpora a SYNNER datos personales de sus propietarios, compradores, vendedores, arrendadores, arrendatarios, huéspedes, clientes potenciales, empleados o colaboradores. En ese caso la agencia es la responsable, INMOCHATIA trata los datos por su cuenta y conforme a sus instrucciones, y el tratamiento se regula mediante el Contrato de Encargo del Tratamiento. Los interesados deben dirigirse, con carácter general, a la agencia responsable para ejercer sus derechos sobre esos datos.
+
+## 3. DATOS PERSONALES QUE PODEMOS TRATAR
+
+**3.1. Cuentas y usuarios:** nombre y apellidos, correo, teléfono, cargo o función, nombre y datos de la empresa, identificadores de cuenta y usuario, credenciales protegidas, datos de autenticación y sesión, preferencias, registros de actividad y uso, dirección IP y datos técnicos necesarios para seguridad.
+
+**3.2. Contratación y facturación:** razón social y NIF, domicilio fiscal, datos de suscripción, historial de facturas, estado de pagos, identificadores de transacciones e información para gestionar incidencias de cobro. Los datos completos de tarjeta los gestiona el proveedor de pagos; SYNNER no los almacena.
+
+**3.3. Datos tratados por cuenta de agencias:** datos identificativos y de contacto, NIF/NIE y datos fiscales, datos bancarios y económicos, información de inmuebles y operaciones, datos de compradores, vendedores, propietarios e inquilinos, contratos, reservas y documentación, fotografías y archivos, mensajes, comunicaciones y notas, historial de interacciones, preferencias e información sobre pagos, depósitos y reservas. La agencia es responsable de informar a los interesados y de la base jurídica que legitima la incorporación de estos datos.
+
+## 4. FINALIDADES Y BASES JURÍDICAS (datos de cuentas y usuarios)
+
 | Finalidad | Base jurídica |
 |---|---|
-| Alta, gestión de cuenta y prestación del servicio | Ejecución del contrato (art. 6.1.b RGPD) |
-| Facturación, cobro y obligaciones fiscales/contables | Contrato y obligación legal (6.1.b, 6.1.c) |
-| Seguridad, prevención de fraude, auditoría | Interés legítimo (6.1.f) |
-| Soporte y comunicaciones del servicio | Contrato / interés legítimo |
-| Comunicaciones comerciales | Consentimiento (6.1.a), revocable [SOLO SI SE USA] |
-| Aprobación manual de altas | Interés legítimo / contrato |
+| Crear y administrar cuentas | Ejecución del contrato |
+| Gestionar suscripciones y pagos | Ejecución del contrato |
+| Emitir facturas y cumplir obligaciones fiscales | Obligación legal |
+| Atender consultas y solicitudes | Ejecución del contrato o interés legítimo |
+| Proteger la plataforma y prevenir fraudes | Interés legítimo y, cuando proceda, obligación legal |
+| Mantener registros de seguridad | Interés legítimo y cumplimiento normativo |
+| Enviar comunicaciones comerciales | Consentimiento u otra base válida aplicable |
+| Gestionar reclamaciones y responsabilidades | Interés legítimo y obligaciones legales |
 
-No se toman decisiones automatizadas con efectos jurídicos sobre personas. Las
-funciones de IA asisten al usuario, que revisa el resultado.
+Los tratamientos realizados por cuenta de una agencia se efectúan conforme a sus instrucciones y no convierten a INMOCHATIA en responsable de esos datos.
 
-## 5. Destinatarios y subencargados
-Para prestar el servicio utilizamos los siguientes proveedores:
-| Proveedor | Función | Ubicación / garantía |
-|---|---|---|
-| Supabase | Base de datos y almacenamiento de archivos | UE (región eu-north-1, Estocolmo) |
-| Render | Alojamiento del backend | [CONFIRMAR REGIÓN] |
-| Vercel | Alojamiento del frontend | Red global; [CONFIRMAR SCC/DPF] |
-| Stripe | Pagos y suscripciones | UE/EE. UU.; SCC / Data Privacy Framework |
-| OpenAI | Análisis de documentos con IA | EE. UU.; SCC/DPF. [CONFIRMAR retención cero / no entrenamiento] |
-| Google (Drive/Sheets, login) | Solo si el Cliente lo activa | SCC/DPF |
-| Meta (WhatsApp Business) | Solo si el Cliente lo activa | SCC/DPF |
-| Proveedor SMTP de email | Envío de correos | [CONFIRMAR] |
+## 5. ACCESO A LOS DATOS Y FUNCIONAMIENTO DE SYNNER
 
-Mantenemos DPA con cada proveedor. Al añadir o cambiar subencargados informaremos a
-los Clientes con antelación (ver DPA, cláusula 7). No vendemos datos personales.
+El funcionamiento de un CRM inteligente puede requerir consultar y organizar registros, relacionar información entre módulos, analizar documentos y comunicaciones, ejecutar búsquedas e informes, actualizar datos mediante automatizaciones, realizar copias de seguridad, resolver incidencias, mantener la seguridad y ejecutar funciones de IA.
 
-## 6. Transferencias internacionales
-Si un proveedor trata datos fuera del Espacio Económico Europeo, se apoya en una
-decisión de adecuación (p. ej. Data Privacy Framework) o en **cláusulas contractuales
-tipo** de la Comisión Europea, con medidas complementarias cuando proceda.
+INMOCHATIA accede a los datos mediante procesos automatizados y, cuando es necesario, mediante personal autorizado para soporte, mantenimiento, seguridad, recuperación o cumplimiento legal, con sujeción a confidencialidad, limitación de finalidad y seguridad.
 
-## 7. Plazos de conservación
-- Datos de cuenta: mientras la cuenta esté activa.
-- Tras la baja: **[30] días** para exportación, y después supresión/anonimización de los
-  Datos del Cliente (como encargado, según instrucciones del Cliente).
-- Facturación y datos fiscales propios: **mínimo 6 años** (Código de Comercio) y plazos
-  tributarios aplicables.
-- Registros de seguridad/auditoría: [12] meses. [CONFIRMAR]
-- Datos bloqueados: mientras puedan surgir responsabilidades legales.
+**INMOCHATIA no adquiere la propiedad de los datos de las agencias ni autorización para comercializar sus bases de datos, vender contactos, captar directamente a sus clientes o competir con ellas.**
 
-## 8. Derechos
-Puedes ejercer acceso, rectificación, supresión, oposición, limitación, portabilidad y
-retirada del consentimiento escribiendo a [EMAIL], acreditando tu identidad. Responderemos
-en el plazo de **un mes**. Si no estás conforme, puedes reclamar ante la **Agencia
-Española de Protección de Datos** (www.aepd.es).
-Para los datos introducidos por una agencia, remitiremos tu solicitud a la agencia
-responsable.
+## 6. INTELIGENCIA ARTIFICIAL Y AGENTES
 
-## 9. Medidas de seguridad
-- Cifrado en tránsito (HTTPS/TLS) y en reposo para campos sensibles (AES-256-GCM).
-- Contraseñas con hash; sesiones con token de acceso de 1 h y refresco.
-- Control de acceso por roles (RBAC) y aislamiento entre agencias por identificador de
-  agencia.
-- Registro de auditoría de acciones sensibles; limitación de peticiones (rate limiting).
-- Notificación de brechas conforme al art. 33 RGPD (ver DPA).
+SYNNER integra funcionalidades de IA y automatización que, según los módulos y permisos activados, pueden analizar y resumir información, extraer datos de documentos, clasificar contactos, recomendar acciones, generar textos, crear o modificar registros, programar tareas y ejecutar comunicaciones u otras acciones autorizadas. Las acciones que afecten a terceros, generen compromisos, transmitan documentos o produzcan costes están sujetas a permisos y controles (ver Anexo de Autorización de Agentes de los Términos).
 
-## 10. Menores
-El servicio es profesional y no está dirigido a menores de edad.
+Los resultados de IA pueden contener errores y deben ser revisados por el CLIENTE cuando la naturaleza de la operación lo requiera. SYNNER no debe usarse para decisiones exclusivamente automatizadas con efectos jurídicos o significativos sobre personas físicas sin las garantías legalmente aplicables.
 
-## 11. Cookies y almacenamiento local
-Ver la Política de Cookies.
+Cuando una funcionalidad use proveedores externos de IA, se transmitirán los datos necesarios para la operación solicitada; la información sobre proveedores, transferencias y garantías se mantiene en la documentación de subencargados. Los datos personales de las agencias no se utilizan para entrenar modelos generales de IA por decisión propia de INMOCHATIA.
 
-## 12. Cambios
-Publicaremos la nueva versión y, si el cambio es sustancial, avisaremos por email o en
-la aplicación.
+## 7. DESTINATARIOS Y PROVEEDORES
+
+Para operar SYNNER, INMOCHATIA recurre a proveedores que actúan como encargados o subencargados: infraestructura de bases de datos y almacenamiento, alojamiento y distribución de aplicaciones, servicios de IA, procesamiento de pagos, correo y comunicaciones, integraciones con Google y de mensajería (WhatsApp Business), y servicios de monitorización, seguridad y soporte.
+
+Entre los proveedores previstos o utilizados según la funcionalidad se encuentran Supabase, Render, Vercel, OpenAI, Stripe, Google y Meta. La entidad contratada, la ubicación de los datos y las condiciones dependen de la configuración y los contratos vigentes; INMOCHATIA mantiene información actualizada de subencargados. No se venden datos personales.
+
+## 8. TRANSFERENCIAS INTERNACIONALES
+
+Algunos proveedores pueden prestar servicio desde fuera del Espacio Económico Europeo o permitir accesos desde dichos países. Cuando haya transferencias internacionales, INMOCHATIA procura que estén amparadas por un mecanismo válido conforme al RGPD: decisión de adecuación, Marco de Privacidad de Datos UE-EE. UU. si el destinatario está certificado y cubierto, cláusulas contractuales tipo y medidas suplementarias cuando sean necesarias. La información específica se recoge en la documentación de subencargados.
+
+## 9. CONSERVACIÓN DE LOS DATOS
+
+- **Cuentas y usuarios:** mientras la cuenta esté activa y durante el tiempo necesario para atender responsabilidades de la relación contractual.
+- **Facturación y documentación contable:** durante los plazos exigidos por la normativa fiscal, mercantil y contable.
+- **Registros de seguridad:** el tiempo necesario y proporcionado para garantizar la seguridad e investigar incidentes; el plazo concreto se documenta en la política interna de conservación.
+- **Datos de agencias:** durante la prestación del servicio y conforme a las instrucciones del CLIENTE.
+- **Tras la baja:** 30 días naturales para exportar los datos de la agencia; después, supresión o anonimización, salvo obligación legal de conservación o necesidad de bloqueo.
+- Las copias de seguridad siguen el ciclo técnico de eliminación y rotación documentado.
+
+## 10. DERECHOS DE LOS INTERESADOS
+
+Acceso, rectificación, supresión, oposición, limitación, portabilidad, retirada del consentimiento y no ser objeto de decisiones exclusivamente automatizadas cuando resulte aplicable.
+
+Cuando INMOCHATIA actúe como responsable, las solicitudes pueden dirigirse a **info@synner.tech**. Cuando los datos los haya incorporado una agencia responsable, la solicitud debe dirigirse preferentemente a dicha agencia; si INMOCHATIA la recibe, la trasladará al responsable o prestará la asistencia que proceda. Las solicitudes se atienden dentro de los plazos legales. También puede presentarse reclamación ante la Agencia Española de Protección de Datos (AEPD), www.aepd.es.
+
+## 11. SEGURIDAD
+
+INMOCHATIA adopta medidas técnicas y organizativas adecuadas al riesgo para proteger los datos frente a accesos no autorizados, pérdida, destrucción, alteración o divulgación indebida. Entre ellas: comunicaciones cifradas (HTTPS/TLS), cifrado en reposo de campos sensibles (NIF, IBAN, CIF), protección de credenciales, control de acceso por roles, separación lógica de los datos entre agencias, registros de actividad y accesos, copias de seguridad, procedimientos de recuperación, protección frente a accesos abusivos y gestión de incidencias y vulnerabilidades. Ninguna medida elimina por completo el riesgo; la seguridad se revisa periódicamente y se adapta a la evolución de los riesgos y de la plataforma.
+
+## 12. MENORES Y DATOS ESPECIALMENTE PROTEGIDOS
+
+SYNNER no está diseñado para gestionar cuentas de menores ni para tratar categorías especiales de datos. Los CLIENTES deben evitar introducir datos de salud, ideología, religión, afiliación sindical, orientación sexual u otras categorías especiales, salvo necesidad legítima y habilitación expresa con garantías adecuadas. Si se detecta información introducida de forma accidental o ilícita, INMOCHATIA podrá restringir su tratamiento, solicitar su retirada o adoptar medidas proporcionadas.
+
+## 13. COOKIES Y TECNOLOGÍAS SIMILARES
+
+El uso de cookies y tecnologías similares se regula en la Política de Cookies, que identifica las cookies utilizadas, su finalidad, duración y mecanismos de aceptación o rechazo cuando sean legalmente exigibles.
+
+## 14. COMUNICACIONES COMERCIALES
+
+INMOCHATIA podrá enviar comunicaciones relacionadas con el servicio (funcionamiento, seguridad, facturación, cambios contractuales). Las comunicaciones comerciales se realizan conforme a la normativa aplicable y con la base jurídica correspondiente; cuando se requiera consentimiento, se solicitará por separado y podrá retirarse.
+
+## 15. MODIFICACIONES DE ESTA POLÍTICA
+
+INMOCHATIA podrá actualizar esta política por cambios legales, técnicos, organizativos o funcionales. Cuando los cambios afecten de manera significativa a los derechos de los usuarios o a las finalidades del tratamiento, se informará por medios adecuados y se recabará el consentimiento cuando resulte legalmente necesario.
+
+## 16. CONTACTO
+
+**INMOCHATIA, SOCIEDAD LIMITADA** · Correo: info@synner.tech · Domicilio: Carrer del Flamenc, 19, 07817, Sant Josep de sa Talaia, Ibiza, Illes Balears.

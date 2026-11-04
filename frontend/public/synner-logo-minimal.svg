@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <defs>
+    <linearGradient id="lux-cop-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE4C7"/>
+      <stop offset="25%" stop-color="#EAA05E"/>
+      <stop offset="50%" stop-color="#C26620"/>
+      <stop offset="75%" stop-color="#8C3908"/>
+      <stop offset="100%" stop-color="#D9803A"/>
+    </linearGradient>
+
+    <linearGradient id="lux-cop-2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFD6A8"/>
+      <stop offset="30%" stop-color="#D47B33"/>
+      <stop offset="60%" stop-color="#9C440D"/>
+      <stop offset="90%" stop-color="#692803"/>
+      <stop offset="100%" stop-color="#C76E2A"/>
+    </linearGradient>
+
+    <radialGradient id="lux-core" cx="35%" cy="30%" r="68%">
+      <stop offset="0%" stop-color="#FFF5EA"/>
+      <stop offset="30%" stop-color="#F2AA6C"/>
+      <stop offset="60%" stop-color="#BD601B"/>
+      <stop offset="100%" stop-color="#5E2101"/>
+    </radialGradient>
+
+    <filter id="lux-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#BD601B" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#lux-shadow)">
+    <!-- Elegant Geometric Hexagonal / Diamond Cadence -->
+    <polygon points="120,38 192,79 192,161 120,202 48,161 48,79" 
+             stroke="url(#lux-cop-1)" stroke-width="2.5" fill="none" opacity="0.45"/>
+
+    <!-- Dual Sweeping Copper Crests -->
+    <path d="M 68 84 C 76 56 100 48 120 48 C 154 48 180 72 180 102 C 180 134 148 144 120 152 C 86 162 60 172 60 196 C 60 200 64 204 70 204 C 84 204 120 186 142 168"
+          stroke="url(#lux-cop-1)" stroke-width="12" stroke-linecap="round" fill="none"/>
+
+    <path d="M 172 156 C 164 184 140 192 120 192 C 86 192 60 168 60 138 C 60 106 92 96 120 88 C 154 78 180 68 180 44 C 180 40 176 36 170 36 C 156 36 120 54 98 72"
+          stroke="url(#lux-cop-2)" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.85"/>
+
+    <!-- Central Intelligent Orb -->
+    <circle cx="120" cy="120" r="19" fill="url(#lux-core)"/>
+    <ellipse cx="114" cy="112" rx="7" ry="4" fill="#FFFFFF" opacity="0.75" transform="rotate(-30 114 112)"/>
+
+    <!-- Satellite Corner Accent Pins -->
+    <circle cx="120" cy="38" r="5" fill="url(#lux-cop-1)"/>
+    <circle cx="192" cy="79" r="5" fill="url(#lux-cop-1)"/>
+    <circle cx="192" cy="161" r="5" fill="url(#lux-cop-1)"/>
+    <circle cx="120" cy="202" r="5" fill="url(#lux-cop-1)"/>
+    <circle cx="48" cy="161" r="5" fill="url(#lux-cop-1)"/>
+    <circle cx="48" cy="79" r="5" fill="url(#lux-cop-1)"/>
+  </g>
+</svg>
+

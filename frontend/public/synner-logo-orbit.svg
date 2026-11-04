@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <defs>
+    <radialGradient id="hub-copper-core" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFF2E2"/>
+      <stop offset="25%" stop-color="#F2AA6B"/>
+      <stop offset="55%" stop-color="#C76922"/>
+      <stop offset="85%" stop-color="#873507"/>
+      <stop offset="100%" stop-color="#541C01"/>
+    </radialGradient>
+
+    <radialGradient id="hub-node" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#FFE8D1"/>
+      <stop offset="35%" stop-color="#E28F47"/>
+      <stop offset="75%" stop-color="#A84E12"/>
+      <stop offset="100%" stop-color="#6E2B04"/>
+    </radialGradient>
+
+    <linearGradient id="hub-arm" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFDEBA"/>
+      <stop offset="50%" stop-color="#C76B24"/>
+      <stop offset="100%" stop-color="#7D3206"/>
+    </linearGradient>
+
+    <linearGradient id="hub-ring" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F7B579"/>
+      <stop offset="50%" stop-color="#8F3C08"/>
+      <stop offset="100%" stop-color="#FAD3A7"/>
+    </linearGradient>
+
+    <filter id="hub-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#C76922" flood-opacity="0.3"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#hub-glow)">
+    <!-- Central Shield Ring -->
+    <circle cx="120" cy="120" r="34" stroke="url(#hub-arm)" stroke-width="6.5" fill="none"/>
+    <circle cx="120" cy="120" r="44" stroke="url(#hub-ring)" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.6"/>
+
+    <!-- 8 Symmetrical Intelligent Synapse Arms -->
+    <!-- 0° Right -->
+    <path d="M 154 120 L 186 120" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="196" cy="120" r="10" stroke="url(#hub-ring)" stroke-width="4.5" fill="#0D1B2A"/>
+
+    <!-- 45° Bottom-Right -->
+    <path d="M 144 144 L 172 172" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="180" cy="180" r="12" fill="url(#hub-node)"/>
+    <circle cx="180" cy="180" r="4.5" fill="#FFF3E6" opacity="0.6"/>
+
+    <!-- 90° Bottom -->
+    <path d="M 120 154 L 120 186" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="120" cy="196" r="10" stroke="url(#hub-ring)" stroke-width="4.5" fill="#0D1B2A"/>
+
+    <!-- 135° Bottom-Left -->
+    <path d="M 96 144 L 68 172" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="60" cy="180" r="12" fill="url(#hub-node)"/>
+    <circle cx="60" cy="180" r="4.5" fill="#FFF3E6" opacity="0.6"/>
+
+    <!-- 180° Left -->
+    <path d="M 86 120 L 54 120" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="44" cy="120" r="10" stroke="url(#hub-ring)" stroke-width="4.5" fill="#0D1B2A"/>
+
+    <!-- 225° Top-Left -->
+    <path d="M 96 96 L 68 68" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="60" cy="60" r="12" fill="url(#hub-node)"/>
+    <circle cx="60" cy="60" r="4.5" fill="#FFF3E6" opacity="0.6"/>
+
+    <!-- 270° Top -->
+    <path d="M 120 86 L 120 54" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="120" cy="44" r="10" stroke="url(#hub-ring)" stroke-width="4.5" fill="#0D1B2A"/>
+
+    <!-- 315° Top-Right -->
+    <path d="M 144 96 L 172 68" stroke="url(#hub-arm)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="180" cy="60" r="12" fill="url(#hub-node)"/>
+    <circle cx="180" cy="60" r="4.5" fill="#FFF3E6" opacity="0.6"/>
+
+    <!-- Center Intelligent Orb -->
+    <circle cx="120" cy="120" r="23" fill="url(#hub-copper-core)"/>
+    <ellipse cx="112" cy="110" rx="9" ry="5" fill="#FFFFFF" opacity="0.65" transform="rotate(-30 112 110)"/>
+  </g>
+</svg>
+
