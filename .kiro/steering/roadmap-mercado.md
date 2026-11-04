@@ -131,7 +131,9 @@ decisiones o cuentas del usuario (marcadas con 👤).
 - [x] Borradores en `legal/`: Términos, Privacidad y Cookies (marcados como BORRADOR).
 - [x] Aceptación de Términos y Privacidad obligatoria en el registro.
 - [ ] 👤 **Revisión por abogado** de los tres documentos (RGPD/LOPDGDD) antes de publicar.
+  NOTA: borradores v2 completos redactados (legal/*_BORRADOR.md); faltan datos de empresa `[ ]` y validación legal.
 - [ ] 👤 Contrato de encargado de tratamiento (agencia ↔ SYNNER). Revisión legal.
+  NOTA: redactado en `legal/CONTRATO_ENCARGADO_TRATAMIENTO_BORRADOR.md` y publicado en `/legal/dpa`. Pendiente: guardar evidencia de aceptación en BD.
 - [x] Páginas públicas legales en `/legal/:doc` (terminos, privacidad, cookies);
       el registro ya enlaza ahí (eran 404). Textos aún pendientes de abogado.
 - [x] Cifrado en reposo de campos sensibles (AES-256-GCM vía middleware Prisma):

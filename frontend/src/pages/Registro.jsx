@@ -180,7 +180,7 @@ export default function Registro() {
           {/* Aceptación de términos */}
           <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: '0.78rem', color: '#4A5568' }}>
             <input type="checkbox" required checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)} style={{ marginTop: 2 }} />
-            <span>He leído y acepto los <a href="/legal/terminos" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Términos de Servicio</a> y la <a href="/legal/privacidad" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Política de Privacidad</a>.</span>
+            <span>He leído y acepto los <a href="/legal/terminos" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Términos de Servicio</a> la <a href="/legal/privacidad" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Política de Privacidad</a> y el <a href="/legal/dpa" target="_blank" rel="noreferrer" style={{ color: '#0f2744', fontWeight: 700 }}>Contrato de Encargado de Tratamiento</a>.</span>
           </label>
 
           {/* Aviso PENDIENTE */}
