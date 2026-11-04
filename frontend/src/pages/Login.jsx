@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Mail, Lock, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-  const { loginWithEmail, devLogin } = useAuth();
+  const { loginWithEmail } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [devLoading, setDevLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -38,19 +37,6 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDevLogin = async () => {
-    setDevLoading(true);
-    try {
-      await devLogin();
-      toast.success('Acceso de prueba iniciado');
-      navigate('/');
-    } catch (err) {
-      toast.error(err.message || 'No se pudo iniciar el acceso rápido');
-    } finally {
-      setDevLoading(false);
     }
   };
 
@@ -159,7 +145,7 @@ export default function LoginPage() {
           top: 0; left: 18%; right: 18%;
           height: 3px;
           border-radius: 0 0 3px 3px;
-          background: linear-gradient(90deg, var(--mediterranean, #1A3A5C), var(--warm-gold, #C9A84C));
+          background: linear-gradient(90deg, #8C4E16, #C27B3C, #E3B07A);
         }
         .login-logo-badge img {
           width: 86px;
@@ -174,7 +160,7 @@ export default function LoginPage() {
           font-weight: 800;
           letter-spacing: 0.06em;
           line-height: 1;
-          color: var(--deep-navy, #0D1B2A);
+          color: #A5601F;
           margin: 0 0 0.3rem;
         }
         .login-brand-name .dot { color: var(--warm-gold, #C9A84C); }
@@ -223,7 +209,7 @@ export default function LoginPage() {
         }
         .login-card-bar {
           height: 3px;
-          background: linear-gradient(90deg, var(--mediterranean, #1A3A5C), var(--warm-gold, #C9A84C));
+          background: linear-gradient(90deg, #8C4E16, #C27B3C, #E3B07A);
         }
         .login-card-body { padding: 1.9rem 1.85rem; }
 
@@ -420,18 +406,6 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="lf-divider">
-                <div className="lf-divider-line" />
-                <span className="lf-divider-text">o</span>
-                <div className="lf-divider-line" />
-              </div>
-
-              <button type="button" onClick={handleDevLogin} disabled={devLoading || loading}
-                className="lf-btn-dev" title="Entra con un clic con el usuario de prueba">
-                <Shield size={14} color="#C9A84C" />
-                {devLoading ? 'Iniciando sesión demo...' : 'Acceso rápido de prueba (Demo)'}
-              </button>
-
               <p className="lf-register">
                 ¿No tienes cuenta?{' '}<Link to="/registro">Registra tu agencia</Link>
               </p>
@@ -445,10 +419,6 @@ export default function LoginPage() {
               </div>
 
             </div>
-          </div>
-
-          <div className="login-foot">
-            Mediterranean Luxury · Real Estate Intelligence
           </div>
 
         </div>
