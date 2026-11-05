@@ -160,18 +160,18 @@ export default function LoginPage() {
           font-weight: 800;
           letter-spacing: 0.06em;
           line-height: 1;
-          color: #A5601F;
+          color: var(--mediterranean, #1A3A5C);
           margin: 0 0 0.3rem;
         }
         .login-brand-name .dot { color: var(--warm-gold, #C9A84C); }
 
         .login-brand-sub {
           display: block;
-          font-size: 0.7rem;
+          font-size: 0.82rem;
           letter-spacing: 0.26em;
           text-transform: uppercase;
-          color: var(--slate-gray, #8A9BB0);
-          font-weight: 600;
+          color: #A5601F;
+          font-weight: 700;
         }
 
         .login-ai-chip {
