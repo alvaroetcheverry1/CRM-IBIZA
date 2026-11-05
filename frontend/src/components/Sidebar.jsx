@@ -43,9 +43,12 @@ function initials(name, lastname) {
 
 import { useAgency } from '../context/AgencyContext';
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { user, logout } = useAuth();
   const { config, logoUrl } = useAgency();
+
+  // Cierra el menú lateral al navegar (solo relevante en móvil)
+  const handleNav = () => { if (typeof onClose === 'function') onClose(); };
 
   const { data: newLeadsData } = useQuery({
     queryKey: ['clientes', 'NUEVO_SIDEBAR'],
@@ -95,6 +98,7 @@ export default function Sidebar() {
               key={item.to}
               to={item.to}
               end={item.exact}
+              onClick={handleNav}
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
             >
               <Icon className="nav-icon" size={18} />

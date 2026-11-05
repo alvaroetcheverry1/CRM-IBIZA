@@ -265,6 +265,8 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
   z-index: 90;
 }
 
+.mobile-menu-btn { display: none; }
+
 .topbar-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
 .topbar-subtitle { font-size: 0.78rem; color: var(--text-muted); }
 
@@ -972,4 +974,16 @@ tbody tr:hover { background: rgba(26,58,92,0.025); }
   /* Permite scroll horizontal en tablas responsivas */
   .table-wrap { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
   .mobile-menu-btn { display: flex !important; }
+
+  /* El sidebar ocupa buena parte de la pantalla en móvil */
+  .sidebar { width: 82vw; max-width: 320px; }
+
+  /* Capa oscura detrás del menú abierto (se cierra al tocar fuera) */
+  .app-layout.sidebar-open .main-content::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(13,27,42,0.5);
+    z-index: 9999;
+  }
 }

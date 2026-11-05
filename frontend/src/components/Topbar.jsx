@@ -12,8 +12,9 @@ export default function Topbar({ title, subtitle, onMenuToggle }) {
         <button 
           onClick={onMenuToggle} 
           className="btn-icon btn-ghost mobile-menu-btn"
-          style={{ display: 'none', color: 'var(--text)' }}
+          style={{ color: 'var(--text)' }}
           title="Abrir menú"
+          aria-label="Abrir menú"
         >
           <Menu size={20} />
         </button>
