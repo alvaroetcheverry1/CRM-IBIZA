@@ -32,6 +32,10 @@ const tareasRoutes = require('./routes/tareas');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Detrás del proxy de Render/Vercel: necesario para que el rate-limit por IP y
+// req.ip (p. ej. la evidencia de aceptación legal) usen la IP real del cliente.
+app.set('trust proxy', 1);
+
 // ─── Seguridad ─────────────────────────────────────────────
 // Helmet con Cross-Origin-Resource-Policy relajado para /api/uploads
 // (sin esto, las imágenes locales no se pueden mostrar en el frontend)
@@ -160,6 +164,16 @@ app.use((req, res) => {
 
 // ─── Error Handler Global ──────────────────────────────────
 app.use((err, req, res, next) => {
+  // Errores de multer (subida de archivos): mensaje claro para el usuario
+  if (err && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      error: 'El archivo es demasiado grande. El tamaño máximo permitido es 50 MB.',
+      code: 'FILE_TOO_LARGE',
+    });
+  }
+  if (err && typeof err.code === 'string' && err.code.startsWith('LIMIT_')) {
+    return res.status(400).json({ error: 'No se pudo procesar la subida del archivo.', code: err.code });
+  }
   logger.error(err.stack);
   res.status(err.status || 500).json({
     error: err.message || 'Error interno del servidor',
