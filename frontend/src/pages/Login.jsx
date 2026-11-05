@@ -138,15 +138,6 @@ export default function LoginPage() {
           justify-content: center;
           position: relative;
         }
-        /* Barra de acento navy→gold, idéntica a las tarjetas del CRM */
-        .login-logo-badge::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 18%; right: 18%;
-          height: 3px;
-          border-radius: 0 0 3px 3px;
-          background: linear-gradient(90deg, #8C4E16, #C27B3C, #E3B07A);
-        }
         .login-logo-badge img {
           width: 86px;
           height: 86px;
@@ -202,14 +193,10 @@ export default function LoginPage() {
           background: var(--bg-card, #FFFFFF);
           border-radius: var(--radius-lg, 16px);
           box-shadow: var(--shadow-lg, 0 8px 32px rgba(13,27,42,0.1));
-          border: 1px solid var(--border-light, #EDE9E0);
+          border: 2px solid #C27B3C;
           overflow: hidden;
           opacity: 0;
           animation: login-fade-in 0.65s cubic-bezier(0.16,1,0.3,1) 0.18s forwards;
-        }
-        .login-card-bar {
-          height: 3px;
-          background: linear-gradient(90deg, #8C4E16, #C27B3C, #E3B07A);
         }
         .login-card-body { padding: 1.9rem 1.85rem; }
 
@@ -350,7 +337,6 @@ export default function LoginPage() {
 
           {/* ── Tarjeta de login ── */}
           <div className="login-card">
-            <div className="login-card-bar" />
             <div className="login-card-body">
 
               <div className="login-greeting">
