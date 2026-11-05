@@ -73,8 +73,8 @@ export default function Sidebar({ onClose }) {
           <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px', maxWidth: '100%', objectFit: 'contain' }} />
         ) : (
           <>
-            <h1 style={{ fontSize: '1.2rem' }}>{config?.nombreComercial || 'SYNNER'}</h1>
-            <span>Real Estate OS</span>
+            <h1>{config?.nombreComercial || 'SYNNER'}</h1>
+            <span>The Intelligent CRM</span>
           </>
         )}
       </div>

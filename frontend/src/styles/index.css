@@ -15,6 +15,12 @@
   --sky-blue:          #4A6FA5;
   --warm-gold:         #C9A84C;
   --gold-light:        #E8C96A;
+  /* Cobre — acento de marca, armonizado con la pantalla de inicio de sesión */
+  --copper-dark:       #8C4E16;
+  --copper:            #B5733A;
+  --copper-light:      #E3B07A;
+  --copper-soft:       #F3E4D4;
+  --copper-gradient:   linear-gradient(90deg, #8C4E16, #C27B3C, #E3B07A);
   --pearl-white:       #F5F0E8;
   --slate-gray:        #8A9BB0;
   --white:             #FFFFFF;
@@ -149,21 +155,23 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
 }
 
 .sidebar-logo h1 {
-  font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-family: var(--font-sans);
+  font-size: 1.35rem;
   color: var(--white);
-  font-weight: 600;
-  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.1;
 }
 
 .sidebar-logo span {
-  font-size: 0.72rem;
-  color: var(--warm-gold);
+  font-size: 0.68rem;
+  color: var(--copper-light);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 500;
+  letter-spacing: 0.22em;
+  font-weight: 600;
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .sidebar-nav {
@@ -205,9 +213,10 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
   background: linear-gradient(135deg, var(--mediterranean), #244d73);
   color: var(--white);
   box-shadow: 0 4px 12px rgba(26,58,92,0.4);
+  border-left: 3px solid var(--copper-light);
 }
 
-.nav-item.active .nav-icon { color: var(--warm-gold); }
+.nav-item.active .nav-icon { color: var(--copper-light); }
 
 .nav-icon {
   width: 18px;
@@ -307,6 +316,9 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
   border: 1px solid var(--border-light);
 }
 
+/* Acento cobre opcional en la cabecera de una card (clase .card.accent) */
+.card.accent { border-top: 3px solid transparent; border-image: var(--copper-gradient) 1; }
+
 .card-header {
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--border-light);
@@ -367,7 +379,8 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
 }
 
 .kpi-icon.navy { background: rgba(13,27,42,0.08); color: var(--deep-navy); }
-.kpi-icon.gold { background: rgba(201,168,76,0.12); color: var(--warm-gold); }
+.kpi-icon.gold { background: rgba(181,115,58,0.14); color: var(--copper); }
+.kpi-icon.copper { background: rgba(181,115,58,0.14); color: var(--copper); }
 .kpi-icon.green { background: var(--success-bg); color: var(--success); }
 .kpi-icon.blue { background: rgba(74,111,165,0.12); color: var(--sky-blue); }
 
@@ -414,6 +427,18 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
 .btn-gold:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 24px rgba(201,168,76,0.4);
+}
+
+.btn-copper {
+  background: linear-gradient(135deg, var(--copper-dark) 0%, var(--copper) 100%);
+  color: var(--white);
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(140,78,22,0.28);
+}
+.btn-copper:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #7d4513 0%, #a9682f 100%);
+  box-shadow: 0 6px 20px rgba(140,78,22,0.38);
 }
 
 .btn-outline {
@@ -466,14 +491,14 @@ h4 { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spa
 }
 
 .badge-disponible { background: var(--success-bg); color: var(--success); }
-.badge-reservada   { background: rgba(201,168,76,0.15); color: #996B00; }
+.badge-reservada   { background: rgba(181,115,58,0.15); color: var(--copper-dark); }
 .badge-alquilada   { background: rgba(74,111,165,0.15); color: var(--sky-blue); }
 .badge-vendida     { background: rgba(45,138,94,0.12); color: var(--success); }
 .badge-vacacional  { background: rgba(26,58,92,0.1); color: var(--mediterranean); }
 .badge-larga       { background: rgba(74,111,165,0.12); color: var(--sky-blue); }
-.badge-venta       { background: rgba(201,168,76,0.12); color: #7A5F00; }
+.badge-venta       { background: rgba(181,115,58,0.12); color: var(--copper-dark); }
 .badge-nuevo       { background: rgba(41,128,185,0.12); color: var(--info); }
-.badge-contactado  { background: rgba(201,168,76,0.15); color: #7A5F00; }
+.badge-contactado  { background: rgba(181,115,58,0.15); color: var(--copper-dark); }
 .badge-visita      { background: rgba(74,111,165,0.15); color: var(--sky-blue); }
 .badge-oferta      { background: rgba(26,58,92,0.12); color: var(--mediterranean); }
 .badge-cerrado     { background: var(--success-bg); color: var(--success); }
